@@ -37,6 +37,32 @@ int main(){
   comp=(t>b);
   cout << (b==5) << endl << (t>3) <<endl << ((b==5)&&(t>3)) << endl;
 
+  cout << t << " | " << b << endl;
+  t.Add(b);
+  cout << t << endl;
+  cout << Arr<int>::Sub(b, t) << endl;
+  t.Sub(b);
+
+  cout << endl << t << endl << b << endl;
+  Arr<bool> comp2(5);
+  comp2 = Arr<int>::Greater(t,b);
+  comp2 = t.Greater(3);
+  cout << comp2 << endl;
+  cout << Arr<bool>::And(Arr<int>::Equals(b, 5), comp2) << endl;
+
+  Arr<double> d(5);
+  double dd[5] = {4.5,3.4,2.3,1.2,0.1};
+  d=dd;
+  cout << d << endl;
+
+  cout << d+4 << endl << d+t << endl;
+  d.Add(4);
+  cout << d << endl;
+  cout << Arr<double>::Add(d,t) << endl;
+
+  t=d;
+  cout<<t<<endl;
+
   // Arr<int> c = t+b;
   // cout << c << endl;
   // cout << t << endl << b <<endl;
