@@ -37,7 +37,6 @@ struct Arr {
     Arr<T>& operator=(const T2* arr2){for(int i=0; i<size; i++){arr[i]=arr2[i];} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator=(const T2& num){for(int i=0; i<size; i++){arr[i]=num;} return *this;}
-
     Arr<T>& operator=(Arr<T>&& arr2){delete arr; arr=arr2.arr; size=arr2.size; arr2.arr = nullptr; arr2.size = 0; return *this;}
 
 //~~~~Overloading arithmatic operators
@@ -45,145 +44,145 @@ struct Arr {
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator+=(const Arr<T2>& arr2){T2* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]+=p[i];} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator+(const Arr<T2>& arr2) const{Arr<T> res = *this; T2* p = arr2.ptr(); T* p2 = res.ptr(); for(int i=0; i<size; i++){p2[i]=arr[i]+p[i];} return res;}
+    Arr<T> operator+(const Arr<T2>& arr2) const{Arr<T> res(size); T* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]+p2[i];} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator+=(const T2& num){for(int i=0; i<size; i++){arr[i]+=num;} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator+(const T2& num) const{Arr<T> res = *this; for(int i=0; i<size; i++){res[i]=arr[i]+num;} return res;}
+    Arr<T> operator+(const T2& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]+num;} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> operator+(const T2& num, const Arr<T>& arr){Arr<T> res = arr; for(int i=0; i<arr.size; i++){res[i]=num+arr[i];} return res;}
+    friend Arr<T> operator+(const T2& num, const Arr<T>& arr){Arr<T> res(arr.size); T* p = res.ptr(); T* p2 = arr.ptr(); for(int i=0; i<arr.size; i++){p[i]=num+p2[i];} return res;}
   //Subtraction
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator-=(const Arr<T2>& arr2){T2* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]-=p[i];} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator-(const Arr<T2>& arr2) const{Arr<T> res = *this; T2* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]-p[i];} return res;}
+    Arr<T> operator-(const Arr<T2>& arr2) const{Arr<T> res(size); T* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]-p2[i];} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator-=(const T2& num){for(int i=0; i<size; i++){arr[i]-=num;} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator-(const T2& num) const{Arr<T> res = *this; for(int i=0; i<size; i++){res[i]=arr[i]-num;} return res;}
+    Arr<T> operator-(const T2& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]-num;} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> operator-(const T2& num, const Arr<T>& arr){Arr<T> res = arr; for(int i=0; i<arr.size; i++){res[i]=num-arr[i];} return res;}
+    friend Arr<T> operator-(const T2& num, const Arr<T>& arr){Arr<T> res(arr.size); T* p = res.ptr(); T2* p2 = arr.ptr();  for(int i=0; i<arr.size; i++){p[i]=num-p2[i];} return res;}
   //Multiply
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator*=(const Arr<T2>& arr2){T2* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]*=p[i];} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator*(const Arr<T2>& arr2) const{Arr<T> res = *this; T2* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]*p[i];} return res;}
+    Arr<T> operator*(const Arr<T2>& arr2) const{Arr<T> res(size); T* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]*p2[i];} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator*=(const T2& num){for(int i=0; i<size; i++){arr[i]*=num;} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator*(const T2& num) const{Arr<T> res = *this; for(int i=0; i<size; i++){res[i]=arr[i]*num;} return res;}
+    Arr<T> operator*(const T2& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]*num;} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> operator*(const T2& num, const Arr<T>& arr){Arr<T> res = arr; for(int i=0; i<arr.size; i++){res[i]=num*arr[i];} return res;}
+    friend Arr<T> operator*(const T2& num, const Arr<T>& arr){Arr<T> res(arr.size); T* p = res.ptr(); T2* p2 = arr.ptr();  for(int i=0; i<arr.size; i++){p[i]=num*p2[i];} return res;}
   //Divide
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator/=(const Arr<T2>& arr2){T2* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]/=p[i];} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator/(const Arr<T2>& arr2) const{Arr<T> res = *this; T2* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]/p[i];} return res;}
+    Arr<T> operator/(const Arr<T2>& arr2) const{Arr<T> res(size); T* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]/p2[i];} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator/=(const T2& num){for(int i=0; i<size; i++){arr[i]/=num;} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator/(const T2& num) const{Arr<T> res = *this; for(int i=0; i<size; i++){res[i]=arr[i]/num;} return res;}
+    Arr<T> operator/(const T2& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]/num;} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> operator/(const T2& num, const Arr<T>& arr){Arr<T> res = arr; for(int i=0; i<arr.size; i++){res[i]=num/arr[i];} return res;}
+    friend Arr<T> operator/(const T2& num, const Arr<T>& arr){Arr<T> res(arr.size); T* p = res.ptr(); T2* p2 = arr.ptr(); for(int i=0; i<arr.size; i++){p[i]=num/p2[i];} return res;}
   //Exp
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> pow(const Arr<T>& arr1, const Arr<T2>& arr2){Arr<T> res = arr1; T2* p = arr2.ptr(); for(int i=0; i<arr1.size; i++){res[i]=pow(arr1[i],p[i]);} return res;}
+    friend Arr<T> pow(const Arr<T>& arr1, const Arr<T2>& arr2){Arr<T> res(arr1.size); T* p = res.ptr(); T2* p1 = arr1.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<arr1.size; i++){p[i]=pow(p1[i],p2[i]);} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> pow(const Arr<T>& arr1, const T2& num){Arr<T> res = arr1; for(int i=0; i<arr1.size; i++){res[i]=pow(arr1[i],num);}return res;}
+    friend Arr<T> pow(const Arr<T>& arr1, const T2& num){Arr<T> res(arr1.size); T* p = res.ptr(); T2* p1 = arr1.ptr(); for(int i=0; i<arr1.size; i++){p[i]=pow(p1[i],num);}return res;}
   //Mod
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator%=(const Arr<T2>& arr2){T2* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]%=p[i];} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator%(const Arr<T2>& arr2) const{Arr<T> res = *this; T2* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]%p[i];} return res;}
+    Arr<T> operator%(const Arr<T2>& arr2) const{Arr<T> res(size); T* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]%p2[i];} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
     Arr<T>& operator%=(const T2& num){for(int i=0; i<size; i++){arr[i]%=num;} return *this;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator%(const T2& num) const{Arr<T> res = *this; for(int i=0; i<size; i++){res[i]=arr[i]%num;} return res;}
+    Arr<T> operator%(const T2& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]%num;} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> operator%(const T2& num, const Arr<T>& arr){Arr<T> res = arr; for(int i=0; i<arr.size; i++){res[i]=num%arr[i];} return res;}
+    friend Arr<T> operator%(const T2& num, const Arr<T>& arr){Arr<T> res(arr.size); T* p = res.ptr(); T2* p2 = arr.ptr(); for(int i=0; i<arr.size; i++){p[i]=num%p2[i];} return res;}
 
 //~~~~Overloading comparrison operators for array return type
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator==(const Arr<T2>& arr2) const{Arr<bool> res(size); T2* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]==p[i];} return res;}
-    Arr<bool> operator!() const{Arr<bool> res(size); for(int i=0; i<size; i++){res[i]=!arr[i];} return res;}
+    Arr<bool> operator==(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]==p2[i];} return res;}
+    Arr<bool> operator!() const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=!arr[i];} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator!=(const Arr<T2>& arr2) const{Arr<bool> res(size); T2* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]!=p[i];} return res;}
+    Arr<bool> operator!=(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]!=p2[i];} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator>(const Arr<T2>& arr2) const{Arr<bool> res(size); T2* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]>p[i];} return res;}
+    Arr<bool> operator>(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]>p2[i];} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator>=(const Arr<T2>& arr2) const{Arr<bool> res(size); T2* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]>=p[i];} return res;}
+    Arr<bool> operator>=(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]>=p2[i];} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator<(const Arr<T2>& arr2) const{Arr<bool> res(size); T2* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]<p[i];} return res;}
+    Arr<bool> operator<(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]<p2[i];} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator<=(const Arr<T2>& arr2) const{Arr<bool> res(size); T2* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]<=p[i];} return res;}
+    Arr<bool> operator<=(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]<=p2[i];} return res;}
 
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator==(const T2& num) const{Arr<bool> res(size); for(int i=0; i<size; i++){res[i]=arr[i]==num;} return res;}
+    Arr<bool> operator==(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]==num;} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator!=(const T2& num) const{Arr<bool> res(size); for(int i=0; i<size; i++){res[i]=arr[i]!=num;} return res;}
+    Arr<bool> operator!=(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]!=num;} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator>(const T2& num) const{Arr<bool> res(size); for(int i=0; i<size; i++){res[i]=arr[i]>num;} return res;}
+    Arr<bool> operator>(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]>num;} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator>=(const T2& num) const{Arr<bool> res(size); for(int i=0; i<size; i++){res[i]=arr[i]>=num;} return res;}
+    Arr<bool> operator>=(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]>=num;} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator<(const T2& num) const{Arr<bool> res(size); for(int i=0; i<size; i++){res[i]=arr[i]<num;} return res;}
+    Arr<bool> operator<(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]<num;} return res;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator<=(const T2& num) const{Arr<bool> res(size); for(int i=0; i<size; i++){res[i]=arr[i]<=num;} return res;}
+    Arr<bool> operator<=(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]<=num;} return res;}
 
 
 //~~~~Safe functions for the overloaded operators
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Add(const Arr<T2>& arr2){CheckCompatability((*this),arr2); (*this)+=arr2; return *this;}
+    Arr<T>& Add(const Arr<T2>& arr2){CheckCompatability((*this),arr2); return (*this)+=arr2;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Sub(const Arr<T2>& arr2){CheckCompatability((*this),arr2); (*this)-=arr2; return *this;}
+    Arr<T>& Sub(const Arr<T2>& arr2){CheckCompatability((*this),arr2); return (*this)-=arr2;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Mult(const Arr<T2>& arr2){CheckCompatability((*this),arr2); (*this)*=arr2; return *this;}
+    Arr<T>& Mult(const Arr<T2>& arr2){CheckCompatability((*this),arr2); return (*this)*=arr2;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Div(const Arr<T2>& arr2){CheckCompatability((*this),arr2); (*this)/=arr2; return *this;}
+    Arr<T>& Div(const Arr<T2>& arr2){CheckCompatability((*this),arr2); return (*this)/=arr2;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Mod(const Arr<T2>& arr2){CheckCompatability((*this),arr2); (*this)%=arr2; return *this;}
+    Arr<T>& Mod(const Arr<T2>& arr2){CheckCompatability((*this),arr2); return (*this)%=arr2;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Pow(const Arr<T2>& arr2){CheckCompatability((*this),arr2); pow((*this),arr2);}
+    Arr<T>& Pow(const Arr<T2>& arr2){CheckCompatability((*this),arr2); return pow((*this),arr2);}
 
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> Equals(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)==arr2; return *this;}
+    Arr<bool> Equals(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)==arr2;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> NotEquals(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)!=arr2; return *this;}
+    Arr<bool> NotEquals(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)!=arr2;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> Greater(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)>arr2; return *this;}
+    Arr<bool> Greater(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)>arr2;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> GreaterEquals(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)>=arr2; return *this;}
+    Arr<bool> GreaterEquals(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)>=arr2;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> Less(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)<arr2; return *this;}
+    Arr<bool> Less(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)<arr2;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> LessEquals(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)<=arr2; return *this;}
+    Arr<bool> LessEquals(const Arr<T2>& arr2) const{CheckCompatability((*this),arr2); return (*this)<=arr2;}
 
 //~~~~Safe Functions for number input
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Add(const T2& num){CheckCompatability((*this),num); (*this)+=num; return *this;}
+    Arr<T>& Add(const T2& num){CheckCompatability((*this),num); return (*this)+=num;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Sub(const T2& num){CheckCompatability((*this),num); (*this)-=num; return *this;}
+    Arr<T>& Sub(const T2& num){CheckCompatability((*this),num); return (*this)-=num;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Mult(const T2& num){CheckCompatability((*this),num); (*this)*=num; return *this;}
+    Arr<T>& Mult(const T2& num){CheckCompatability((*this),num); return (*this)*=num;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Div(const T2& num){CheckCompatability((*this),num); (*this)/=num; return *this;}
+    Arr<T>& Div(const T2& num){CheckCompatability((*this),num); return (*this)/=num;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Mod(const T2& num){CheckCompatability((*this),num); (*this)%=num; return *this;}
+    Arr<T>& Mod(const T2& num){CheckCompatability((*this),num); return (*this)%=num;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& Pow(const T2& num){CheckCompatability((*this),num); pow((*this),num); return *this;}
+    Arr<T>& Pow(const T2& num){CheckCompatability((*this),num); return pow((*this),num);}
 
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> Equals(const T2& num) const{CheckCompatability((*this),num); return (*this)==num; return *this;}
+    Arr<bool> Equals(const T2& num) const{CheckCompatability((*this),num); return (*this)==num;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> NotEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)!=num; return *this;}
+    Arr<bool> NotEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)!=num;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> Greater(const T2& num) const{CheckCompatability((*this),num); return (*this)>num; return *this;}
+    Arr<bool> Greater(const T2& num) const{CheckCompatability((*this),num); return (*this)>num;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> GreaterEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)>=num; return *this;}
+    Arr<bool> GreaterEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)>=num;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> Less(const T2& num) const{CheckCompatability((*this),num); return (*this)<num; return *this;}
+    Arr<bool> Less(const T2& num) const{CheckCompatability((*this),num); return (*this)<num;}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> LessEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)<=num; return *this;}
+    Arr<bool> LessEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)<=num;}
 
 
 
@@ -247,21 +246,21 @@ struct Arr {
 //~~~~Case specific comparison operator overload
     template <bool>
     Arr<bool>& operator&=(const Arr<bool>& arr2){bool* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]&&p[i];} return *this;}
-    Arr<bool> operator&&(const Arr<bool>& arr2) const{Arr<T> res = *this; bool* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]&&p[i];} return res;}
+    Arr<bool> operator&&(const Arr<bool>& arr2) const{Arr<T> res(size); T* p = res.ptr(); bool* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]&&p2[i];} return res;}
     Arr<bool>& operator&=(const bool& num){for(int i=0; i<size; i++){arr[i]&&num;} return *this;}
-    Arr<bool> operator&&(const bool& num) const{Arr<T> res = *this; for(int i=0; i<size; i++){res[i]=arr[i]&&num;} return res;}
+    Arr<bool> operator&&(const bool& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]&&num;} return res;}
 
     Arr<bool>& operator|=(const Arr<bool>& arr2){bool* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]||p[i];} return *this;}
-    Arr<bool> operator||(const Arr<bool>& arr2) const{Arr<T> res = *this; bool* p = arr2.ptr(); for(int i=0; i<size; i++){res[i]=arr[i]||p[i];} return res;}
+    Arr<bool> operator||(const Arr<bool>& arr2) const{Arr<T> res(size); T* p = res.ptr(); bool* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]||p2[i];} return res;}
     Arr<bool>& operator|=(const bool& num){for(int i=0; i<size; i++){arr[i]||num;} return *this;}
-    Arr<bool> operator||(const bool& num) const{Arr<T> res = *this; for(int i=0; i<size; i++){res[i]=arr[i]||num;} return res;}
+    Arr<bool> operator||(const bool& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]||num;} return res;}
 
 //~~~~Safe boolean comparison
-    Arr<bool>& And(const Arr<bool>& arr2){CheckCompatability((*this),arr2); (*this)&=arr2; return *this;}
-    Arr<bool>& Or(const Arr<bool>& arr2){CheckCompatability((*this),arr2); (*this)|=arr2; return *this;}
+    Arr<bool>& And(const Arr<bool>& arr2){CheckCompatability((*this),arr2); return (*this)&=arr2;}
+    Arr<bool>& Or(const Arr<bool>& arr2){CheckCompatability((*this),arr2); return (*this)|=arr2;}
 
-    Arr<bool>& And(const bool& num){CheckCompatability((*this),num); (*this)&=num; return *this;}
-    Arr<bool>& Or(const bool& num){CheckCompatability((*this),num); (*this)|=num; return *this;}
+    Arr<bool>& And(const bool& num){CheckCompatability((*this),num); return (*this)&=num;}
+    Arr<bool>& Or(const bool& num){CheckCompatability((*this),num); return (*this)|=num;}
 
 //~~~~Static safe boolean comparison
     static Arr<bool> And(const Arr<bool>& arr1, const Arr<bool>& arr2){CheckCompatability(arr1,arr2); return arr1&&arr2;}
