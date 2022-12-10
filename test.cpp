@@ -100,7 +100,7 @@ int main(){
 cout << endl << endl << endl;
 
   size_t N_array = 10000;
-  size_t N_repeat = 100000;
+  size_t N_repeat = 10000;
   int num1 = 5, num2 = 3;
   Arr<int> t1 (N_array, num1);
   Arr<int> t2 (N_array, num2);
@@ -181,4 +181,12 @@ cout << endl << endl << endl;
   t_end = chrono::high_resolution_clock::now();
   duration = duration_cast<chrono::microseconds>(t_end - t_start)/(double)N_repeat;
   cout << "    |     " << duration.count() << "     |    " << (tempDur-duration).count() << "    |   microseconds." << endl;
+
+
+
+  int dim_arr[3][5] = {{2,2,3,2,1},{6,5,4,6,4},{66,7,7,9,7}};
+  Arr<int> dimArr(dim_arr[0],(size_t[]){3,5}, 2);
+  cout << dimArr << endl;
+
+
 }

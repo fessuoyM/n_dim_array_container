@@ -56,92 +56,703 @@ struct Arr {
 //~~~~Overloading arithmatic operators
   //Addition
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& operator+=(const Arr<T2>& arr2){T2* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]+=p[i];} return *this;}
+    Arr<T>& operator+=(const Arr<T2>& arr2){
+      T2* p = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i] += p[i];
+              arr[i+1] += p[i+1];
+              arr[i+2] += p[i+2];
+              arr[i+3] += p[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i] += p[i];
+      }
+      return *this;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator+(const Arr<T2>& arr2) const{Arr<T> res(size); T* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]+p2[i];} return res;}
+    Arr<T> operator+(const Arr<T2>& arr2) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]+p2[i];
+              p[i+1]=arr[i+1]+p2[i+1];
+              p[i+2]=arr[i+2]+p2[i+2];
+              p[i+3]=arr[i+3]+p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]+p2[i];
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& operator+=(const T2& num){for(int i=0; i<size; i++){arr[i]+=num;} return *this;}
+    Arr<T>& operator+=(const T2& num){
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i] += num;
+              arr[i+1] += num;
+              arr[i+2] += num;
+              arr[i+3] += num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i] += num;
+      }
+      return *this;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator+(const T2& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]+num;} return res;}
+    Arr<T> operator+(const T2& num) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]+num;
+              p[i+1]=arr[i+1]+num;
+              p[i+2]=arr[i+2]+num;
+              p[i+3]=arr[i+3]+num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]+num;
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> operator+(const T2& num, const Arr<T>& arr){Arr<T> res(arr.size); T* p = res.ptr(); T* p2 = arr.ptr(); for(int i=0; i<arr.size; i++){p[i]=num+p2[i];} return res;}
+    friend Arr<T> operator+(const T2& num, const Arr<T>& arr){
+      Arr<T> res(arr.size);
+      T* p = res.ptr();
+      T* p2 = arr.ptr();
+      if (arr.size>=4) {
+          for (int i=0; i<arr.size; i += 4) {
+              p[i]=p2[i]+num;
+              p[i+1]=p2[i+1]+num;
+              p[i+2]=p2[i+2]+num;
+              p[i+3]=p2[i+3]+num;
+          }
+      }
+      for (int i = (arr.size/4)*4; i<arr.size; ++i) {
+          p[i]=arr[i]+num;
+      }
+      return res;
+    }
+
   //Subtraction
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& operator-=(const Arr<T2>& arr2){T2* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]-=p[i];} return *this;}
+    Arr<T>& operator-=(const Arr<T2>& arr2){
+      T2* p = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i] -= p[i];
+              arr[i+1] -= p[i+1];
+              arr[i+2] -= p[i+2];
+              arr[i+3] -= p[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i] -= p[i];
+      }
+      return *this;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator-(const Arr<T2>& arr2) const{Arr<T> res(size); T* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]-p2[i];} return res;}
+    Arr<T> operator-(const Arr<T2>& arr2) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]-p2[i];
+              p[i+1]=arr[i+1]-p2[i+1];
+              p[i+2]=arr[i+2]-p2[i+2];
+              p[i+3]=arr[i+3]-p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]-p2[i];
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& operator-=(const T2& num){for(int i=0; i<size; i++){arr[i]-=num;} return *this;}
+    Arr<T>& operator-=(const T2& num){
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i] -= num;
+              arr[i+1] -= num;
+              arr[i+2] -= num;
+              arr[i+3] -= num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i] -= num;
+      }
+      return *this;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator-(const T2& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]-num;} return res;}
+    Arr<T> operator-(const T2& num) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]-num;
+              p[i+1]=arr[i+1]-num;
+              p[i+2]=arr[i+2]-num;
+              p[i+3]=arr[i+3]-num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]-num;
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> operator-(const T2& num, const Arr<T>& arr){Arr<T> res(arr.size); T* p = res.ptr(); T2* p2 = arr.ptr();  for(int i=0; i<arr.size; i++){p[i]=num-p2[i];} return res;}
+    friend Arr<T> operator-(const T2& num, const Arr<T>& arr){
+      Arr<T> res(arr.size);
+      T* p = res.ptr();
+      T* p2 = arr.ptr();
+      if (arr.size>=4) {
+          for (int i=0; i<arr.size; i += 4) {
+              p[i]=p2[i]-num;
+              p[i+1]=p2[i+1]-num;
+              p[i+2]=p2[i+2]-num;
+              p[i+3]=p2[i+3]-num;
+          }
+      }
+      for (int i = (arr.size/4)*4; i<arr.size; ++i) {
+          p[i]=arr[i]-num;
+      }
+      return res;
+    }
+
   //Multiply
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& operator*=(const Arr<T2>& arr2){T2* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]*=p[i];} return *this;}
+    Arr<T>& operator*=(const Arr<T2>& arr2){
+      T2* p = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i] *= p[i];
+              arr[i+1] *= p[i+1];
+              arr[i+2] *= p[i+2];
+              arr[i+3] *= p[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i] *= p[i];
+      }
+      return *this;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator*(const Arr<T2>& arr2) const{Arr<T> res(size); T* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]*p2[i];} return res;}
+    Arr<T> operator*(const Arr<T2>& arr2) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]*p2[i];
+              p[i+1]=arr[i+1]*p2[i+1];
+              p[i+2]=arr[i+2]*p2[i+2];
+              p[i+3]=arr[i+3]*p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]*p2[i];
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& operator*=(const T2& num){for(int i=0; i<size; i++){arr[i]*=num;} return *this;}
+    Arr<T>& operator*=(const T2& num){
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i] *= num;
+              arr[i+1] *= num;
+              arr[i+2] *= num;
+              arr[i+3] *= num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i] *= num;
+      }
+      return *this;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator*(const T2& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]*num;} return res;}
+    Arr<T> operator*(const T2& num) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]*num;
+              p[i+1]=arr[i+1]*num;
+              p[i+2]=arr[i+2]*num;
+              p[i+3]=arr[i+3]*num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]*num;
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> operator*(const T2& num, const Arr<T>& arr){Arr<T> res(arr.size); T* p = res.ptr(); T2* p2 = arr.ptr();  for(int i=0; i<arr.size; i++){p[i]=num*p2[i];} return res;}
+    friend Arr<T> operator*(const T2& num, const Arr<T>& arr){
+      Arr<T> res(arr.size);
+      T* p = res.ptr();
+      T* p2 = arr.ptr();
+      if (arr.size>=4) {
+          for (int i=0; i<arr.size; i += 4) {
+              p[i]=p2[i]*num;
+              p[i+1]=p2[i+1]*num;
+              p[i+2]=p2[i+2]*num;
+              p[i+3]=p2[i+3]*num;
+          }
+      }
+      for (int i = (arr.size/4)*4; i<arr.size; ++i) {
+          p[i]=arr[i]*num;
+      }
+      return res;
+    }
+
   //Divide
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& operator/=(const Arr<T2>& arr2){T2* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]/=p[i];} return *this;}
+    Arr<T>& operator/=(const Arr<T2>& arr2){
+      T2* p = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i] /= p[i];
+              arr[i+1] /= p[i+1];
+              arr[i+2] /= p[i+2];
+              arr[i+3] /= p[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i] /= p[i];
+      }
+      return *this;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator/(const Arr<T2>& arr2) const{Arr<T> res(size); T* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]/p2[i];} return res;}
+    Arr<T> operator/(const Arr<T2>& arr2) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]/p2[i];
+              p[i+1]=arr[i+1]/p2[i+1];
+              p[i+2]=arr[i+2]/p2[i+2];
+              p[i+3]=arr[i+3]/p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]/p2[i];
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& operator/=(const T2& num){for(int i=0; i<size; i++){arr[i]/=num;} return *this;}
+    Arr<T>& operator/=(const T2& num){
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i] /= num;
+              arr[i+1] /= num;
+              arr[i+2] /= num;
+              arr[i+3] /= num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i] /= num;
+      }
+      return *this;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator/(const T2& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]/num;} return res;}
+    Arr<T> operator/(const T2& num) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]/num;
+              p[i+1]=arr[i+1]/num;
+              p[i+2]=arr[i+2]/num;
+              p[i+3]=arr[i+3]/num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]/num;
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> operator/(const T2& num, const Arr<T>& arr){Arr<T> res(arr.size); T* p = res.ptr(); T2* p2 = arr.ptr(); for(int i=0; i<arr.size; i++){p[i]=num/p2[i];} return res;}
+    friend Arr<T> operator/(const T2& num, const Arr<T>& arr){
+      Arr<T> res(arr.size);
+      T* p = res.ptr();
+      T* p2 = arr.ptr();
+      if (arr.size>=4) {
+          for (int i=0; i<arr.size; i += 4) {
+              p[i]=p2[i]/num;
+              p[i+1]=p2[i+1]/num;
+              p[i+2]=p2[i+2]/num;
+              p[i+3]=p2[i+3]/num;
+          }
+      }
+      for (int i = (arr.size/4)*4; i<arr.size; ++i) {
+          p[i]=arr[i]/num;
+      }
+      return res;
+    }
+
   //Exp
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> pow(const Arr<T>& arr1, const Arr<T2>& arr2){Arr<T> res(arr1.size); T* p = res.ptr(); T2* p1 = arr1.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<arr1.size; i++){p[i]=pow(p1[i],p2[i]);} return res;}
+    friend Arr<T> pow(const Arr<T>& arr1, const Arr<T2>& arr2){
+      Arr<T> res(arr1.size);
+      T* p = res.ptr();
+      T2* p1 = arr1.ptr();
+      T2* p2 = arr2.ptr();
+      if (arr1.size>=4) {
+          for (int i=0; i<arr1.size; i += 4) {
+              p[i]=pow(p1[i],p2[i]);
+              p[i+1]=pow(p1[i+1],p2[i+1]);
+              p[i+2]=pow(p1[i+2],p2[i+2]);
+              p[i+3]=pow(p1[i+3],p2[i+3]);
+          }
+      }
+      for (int i = (arr1.size/4)*4; i<arr1.size; ++i) {
+          p[i]=pow(p1[i],p2[i]);;
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> pow(const Arr<T>& arr1, const T2& num){Arr<T> res(arr1.size); T* p = res.ptr(); T2* p1 = arr1.ptr(); for(int i=0; i<arr1.size; i++){p[i]=pow(p1[i],num);}return res;}
+    friend Arr<T> pow(const Arr<T>& arr1, const T2& num){
+      Arr<T> res(arr1.size);
+      T* p = res.ptr();
+      T2* p1 = arr1.ptr();
+      if (arr1.size>=4) {
+          for (int i=0; i<arr1.size; i += 4) {
+              p[i]=pow(p1[i],num);
+              p[i+1]=pow(p1[i+1],num);
+              p[i+2]=pow(p1[i+2],num);
+              p[i+3]=pow(p1[i+3],num);
+          }
+      }
+      for (int i = (arr1.size/4)*4; i<arr1.size; ++i) {
+          p[i]=pow(p1[i],num);;
+      }
+      return res;
+    }
   //Mod
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& operator%=(const Arr<T2>& arr2){T2* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]%=p[i];} return *this;}
+    Arr<T>& operator%=(const Arr<T2>& arr2){
+      T2* p = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i] %= p[i];
+              arr[i+1] %= p[i+1];
+              arr[i+2] %= p[i+2];
+              arr[i+3] %= p[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i] %= p[i];
+      }
+      return *this;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator%(const Arr<T2>& arr2) const{Arr<T> res(size); T* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]%p2[i];} return res;}
+    Arr<T> operator%(const Arr<T2>& arr2) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]%p2[i];
+              p[i+1]=arr[i+1]%p2[i+1];
+              p[i+2]=arr[i+2]%p2[i+2];
+              p[i+3]=arr[i+3]%p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]%p2[i];
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T>& operator%=(const T2& num){for(int i=0; i<size; i++){arr[i]%=num;} return *this;}
+    Arr<T>& operator%=(const T2& num){
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i] %= num;
+              arr[i+1] %= num;
+              arr[i+2] %= num;
+              arr[i+3] %= num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i] %= num;
+      }
+      return *this;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T> operator%(const T2& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]%num;} return res;}
+    Arr<T> operator%(const T2& num) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]%num;
+              p[i+1]=arr[i+1]%num;
+              p[i+2]=arr[i+2]%num;
+              p[i+3]=arr[i+3]%num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]%num;
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    friend Arr<T> operator%(const T2& num, const Arr<T>& arr){Arr<T> res(arr.size); T* p = res.ptr(); T2* p2 = arr.ptr(); for(int i=0; i<arr.size; i++){p[i]=num%p2[i];} return res;}
+    friend Arr<T> operator%(const T2& num, const Arr<T>& arr){
+      Arr<T> res(arr.size);
+      T* p = res.ptr();
+      T* p2 = arr.ptr();
+      if (arr.size>=4) {
+          for (int i=0; i<arr.size; i += 4) {
+              p[i]=p2[i]%num;
+              p[i+1]=p2[i+1]%num;
+              p[i+2]=p2[i+2]%num;
+              p[i+3]=p2[i+3]%num;
+          }
+      }
+      for (int i = (arr.size/4)*4; i<arr.size; ++i) {
+          p[i]=arr[i]%num;
+      }
+      return res;
+    }
+
 
 //~~~~Overloading comparrison operators for array return type
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator==(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]==p2[i];} return res;}
-    Arr<bool> operator!() const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=!arr[i];} return res;}
+    Arr<bool> operator==(const Arr<T2>& arr2) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]==p2[i];
+              p[i+1]=arr[i+1]==p2[i+1];
+              p[i+2]=arr[i+2]==p2[i+2];
+              p[i+3]=arr[i+3]==p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]==p2[i];
+      }
+      return res;
+    }
+    Arr<bool> operator!() const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=!arr[i];
+              p[i+1]=!arr[i+1];
+              p[i+2]=!arr[i+2];
+              p[i+3]=!arr[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=!arr[i];
+      }
+      for(int i=0; i<size; i++){p[i]=!arr[i];}
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator!=(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]!=p2[i];} return res;}
+    Arr<bool> operator!=(const Arr<T2>& arr2) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]!=p2[i];
+              p[i+1]=arr[i+1]!=p2[i+1];
+              p[i+2]=arr[i+2]!=p2[i+2];
+              p[i+3]=arr[i+3]!=p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]!=p2[i];
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator>(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]>p2[i];} return res;}
+    Arr<bool> operator>=(const Arr<T2>& arr2) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]>=p2[i];
+              p[i+1]=arr[i+1]>=p2[i+1];
+              p[i+2]=arr[i+2]>=p2[i+2];
+              p[i+3]=arr[i+3]>=p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]>=p2[i];
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator>=(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]>=p2[i];} return res;}
+    Arr<bool> operator>(const Arr<T2>& arr2) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]>p2[i];
+              p[i+1]=arr[i+1]>p2[i+1];
+              p[i+2]=arr[i+2]>p2[i+2];
+              p[i+3]=arr[i+3]>p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]>p2[i];
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator<(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]<p2[i];} return res;}
+    Arr<bool> operator<=(const Arr<T2>& arr2) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]<=p2[i];
+              p[i+1]=arr[i+1]<=p2[i+1];
+              p[i+2]=arr[i+2]<=p2[i+2];
+              p[i+3]=arr[i+3]<=p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]<=p2[i];
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator<=(const Arr<T2>& arr2) const{Arr<bool> res(size); bool* p = res.ptr(); T2* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]<=p2[i];} return res;}
+    Arr<bool> operator<(const Arr<T2>& arr2) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      T2* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]<p2[i];
+              p[i+1]=arr[i+1]<p2[i+1];
+              p[i+2]=arr[i+2]<p2[i+2];
+              p[i+3]=arr[i+3]<p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]<p2[i];
+      }
+      return res;
+    }
 
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator==(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]==num;} return res;}
+    Arr<bool> operator==(const T2& num) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]==num;
+              p[i+1]=arr[i+1]==num;
+              p[i+2]=arr[i+2]==num;
+              p[i+3]=arr[i+3]==num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]==num;
+      }
+      for(int i=0; i<size; i++){p[i]=arr[i]==num;}
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator!=(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]!=num;} return res;}
+    Arr<bool> operator!=(const T2& num) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]!=num;
+              p[i+1]=arr[i+1]!=num;
+              p[i+2]=arr[i+2]!=num;
+              p[i+3]=arr[i+3]!=num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]!=num;
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator>(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]>num;} return res;}
+    Arr<bool> operator>=(const T2& num) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]>=num;
+              p[i+1]=arr[i+1]>=num;
+              p[i+2]=arr[i+2]>=num;
+              p[i+3]=arr[i+3]>=num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]>=num;
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator>=(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]>=num;} return res;}
+    Arr<bool> operator>(const T2& num) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]>num;
+              p[i+1]=arr[i+1]>num;
+              p[i+2]=arr[i+2]>num;
+              p[i+3]=arr[i+3]>num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]>num;
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator<(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]<num;} return res;}
+    Arr<bool> operator<=(const T2& num) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]<=num;
+              p[i+1]=arr[i+1]<=num;
+              p[i+2]=arr[i+2]<=num;
+              p[i+3]=arr[i+3]<=num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]<=num;
+      }
+      return res;
+    }
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<bool> operator<=(const T2& num) const{Arr<bool> res(size); bool* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]<=num;} return res;}
+    Arr<bool> operator<(const T2& num) const{
+      Arr<bool> res(size);
+      bool* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]<num;
+              p[i+1]=arr[i+1]<num;
+              p[i+2]=arr[i+2]<num;
+              p[i+3]=arr[i+3]<num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]<num;
+      }
+      return res;
+    }
 
 
 //~~~~Safe functions for the overloaded operators
@@ -259,15 +870,130 @@ struct Arr {
 
 //~~~~Case specific comparison operator overload
     template <bool>
-    Arr<bool>& operator&=(const Arr<bool>& arr2){bool* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]&&p[i];} return *this;}
-    Arr<bool> operator&&(const Arr<bool>& arr2) const{Arr<T> res(size); T* p = res.ptr(); bool* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]&&p2[i];} return res;}
-    Arr<bool>& operator&=(const bool& num){for(int i=0; i<size; i++){arr[i]&&num;} return *this;}
-    Arr<bool> operator&&(const bool& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]&&num;} return res;}
+    Arr<bool>& operator&=(const Arr<bool>& arr2){
+      bool* p = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i]=arr[i]&&p[i];
+              arr[i+1]=arr[i+1]&&p[i+1];
+              arr[i+2]=arr[i+2]&&p[i+2];
+              arr[i+3]=arr[i+3]&&p[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i]=arr[i]!=p[i];
+      }
+      return *this;
+    }
+    Arr<bool> operator&&(const Arr<bool>& arr2) const{
+      Arr<T> res(size); T* p = res.ptr();
+      bool* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]&&p2[i];
+              p[i+1]=arr[i+1]&&p2[i+1];
+              p[i+2]=arr[i+2]&&p2[i+2];
+              p[i+3]=arr[i+3]&&p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]!=p2[i];
+      }
+      return res;
+    }
+    Arr<bool>& operator&=(const bool& num){
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i]=arr[i]&&num;
+              arr[i+1]=arr[i+1]&&num;
+              arr[i+2]=arr[i+2]&&num;
+              arr[i+3]=arr[i+3]&&num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i]=arr[i]!=num;
+      }
+      return *this;
+    }
+    Arr<bool> operator&&(const bool& num) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]&&p[i];
+              p[i+1]=arr[i+1]&&p[i+1];
+              p[i+2]=arr[i+2]&&p[i+2];
+              p[i+3]=arr[i+3]&&p[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]!=p[i];
+      }
+      return res;
+    }
 
-    Arr<bool>& operator|=(const Arr<bool>& arr2){bool* p = arr2.ptr(); for(int i=0; i<size; i++){arr[i]||p[i];} return *this;}
-    Arr<bool> operator||(const Arr<bool>& arr2) const{Arr<T> res(size); T* p = res.ptr(); bool* p2 = arr2.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]||p2[i];} return res;}
-    Arr<bool>& operator|=(const bool& num){for(int i=0; i<size; i++){arr[i]||num;} return *this;}
-    Arr<bool> operator||(const bool& num) const{Arr<T> res(size); T* p = res.ptr(); for(int i=0; i<size; i++){p[i]=arr[i]||num;} return res;}
+    template <bool>
+    Arr<bool>& operator|=(const Arr<bool>& arr2){
+      bool* p = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i]=arr[i]||p[i];
+              arr[i+1]=arr[i+1]||p[i+1];
+              arr[i+2]=arr[i+2]||p[i+2];
+              arr[i+3]=arr[i+3]||p[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i]=arr[i]!=p[i];
+      }
+      return *this;
+    }
+    Arr<bool> operator||(const Arr<bool>& arr2) const{
+      Arr<T> res(size); T* p = res.ptr();
+      bool* p2 = arr2.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]||p2[i];
+              p[i+1]=arr[i+1]||p2[i+1];
+              p[i+2]=arr[i+2]||p2[i+2];
+              p[i+3]=arr[i+3]||p2[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]!=p2[i];
+      }
+      return res;
+    }
+    Arr<bool>& operator|=(const bool& num){
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              arr[i]=arr[i]||num;
+              arr[i+1]=arr[i+1]||num;
+              arr[i+2]=arr[i+2]||num;
+              arr[i+3]=arr[i+3]||num;
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          arr[i]=arr[i]!=num;
+      }
+      return *this;
+    }
+    Arr<bool> operator||(const bool& num) const{
+      Arr<T> res(size);
+      T* p = res.ptr();
+      if (size>=4) {
+          for (int i=0; i<size; i += 4) {
+              p[i]=arr[i]||p[i];
+              p[i+1]=arr[i+1]||p[i+1];
+              p[i+2]=arr[i+2]||p[i+2];
+              p[i+3]=arr[i+3]||p[i+3];
+          }
+      }
+      for (int i = (size/4)*4; i<size; ++i) {
+          p[i]=arr[i]!=p[i];
+      }
+      return res;
+    }
 
 //~~~~Safe boolean comparison
     Arr<bool>& And(const Arr<bool>& arr2){CheckCompatability((*this),arr2); return (*this)&=arr2;}
