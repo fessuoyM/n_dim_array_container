@@ -7,23 +7,37 @@ template <typename T, typename v = typename enable_if<is_arithmetic<T>::value, b
 struct Arr {
   private:
     T* arr;
+    size_t* shap;
+    size_t nDim;
     size_t size;
   public:
 //~~~~Constructor and Destructors
-    Arr():size(0){}
+  //~~~~1D functions
+    Arr():size(0), nDim{0}, shap{&size}{}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr(const T2* a, const size_t& n):size{n}{arr = new T[n]; for(int i=0; i<n; i++){arr[i]=a[i];}}
+    Arr(const T2* a, const size_t& n):size{n}, nDim{1}, shap{&size}{arr = new T[n]; for(int i=0; i<n; i++){arr[i]=a[i];}}
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr(const size_t& n, const T2& num):size{n}{arr = new T[n]; for(int i=0; i<n; i++){arr[i]=num;}}
+    Arr(const size_t& n, const T2& num):size{n}, nDim{1}, shap{&size}{arr = new T[n]; for(int i=0; i<n; i++){arr[i]=num;}}
+    Arr(const size_t& n):size{n}, nDim{1}, shap{&size}{arr = new T[n];}
+
+  //~~~~nD functions
     template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr(const Arr<T2>& a):size{a.siz()}{arr = new T[a.siz()]; T2* p = a.ptr(); for(int i=0; i<size; i++){arr[i]=p[i];}}
-    Arr(const Arr<T>& a):size{a.size}{arr = new T[a.size]; T* p = a.arr; for(int i=0; i<size; i++){arr[i]=p[i];}}
-    Arr(const size_t& n):size{n}{arr = new T[n];}
-    Arr(Arr<T>&& a):size{a.size},arr{a.arr}{a.arr = nullptr; a.size = 0;}
-    // ~Arr(){delete[] arr;}
+    Arr(const T2* a, const size_t* sh, const size_t& dims):nDim{dims}, size{1}{shap = new size_t[nDim]; for (int i=0; i<nDim; i++){shap[i] = sh[i]; size*=shap[i];} arr = new T[size]; for(int i=0; i<size; i++){arr[i]=a[i];}}
+    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    Arr(const size_t* sh, const size_t& dims, const T2& num):nDim{dims}, size{1}{shap = new size_t[nDim]; for (int i=0; i<nDim; i++){shap[i] = sh[i]; size*=shap[i];} arr = new T[size]; for(int i=0; i<size; i++){arr[i]=num;}}
+    Arr(const size_t* sh, const size_t& dims):nDim{dims}, size{1}{shap = new size_t[nDim]; for (int i=0; i<nDim; i++){shap[i] = sh[i]; size*=shap[i];} arr = new T[size];}
+
+  //~~~~Copy and move constructor
+    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    Arr(const Arr<T2>& a):size{a.siz()}, nDim{a.nDim}, shap{a.shap}{arr = new T[a.siz()]; T2* p = a.ptr(); for(int i=0; i<size; i++){arr[i]=p[i];}}
+    Arr(const Arr<T>& a):size{a.size}, nDim{a.nDim}, shap{a.shap}{arr = new T[a.size]; T* p = a.arr; for(int i=0; i<size; i++){arr[i]=p[i];}}
+    Arr(Arr<T>&& a):size{a.size}, arr{a.arr}, nDim{a.nDim}, shap{a.shap}{a.arr = nullptr; a.size = 0; a.nDim=0; a.shap=&a.size;}
+
 
 //~~~~Access private members directly
     size_t siz() const{return size;}
+    size_t ndim() const{return ndim;}
+    size_t shape() const{return shape;}
     T* ptr() const{return arr;}
 
 //~~~~Overloading access operators
