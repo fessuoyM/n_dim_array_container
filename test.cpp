@@ -35,7 +35,7 @@ T* add_r (T *a, T *b, int siz){
   for (int i=0; i<siz; i++){
     c[i]=a[i]+b[i];
   }
-  return c;
+  return move(&c[0]);
 }
 
 
@@ -55,8 +55,11 @@ int main(){
   Arr<int> b(5);
   for(int i=0; i<b.size; i++){b[i]=bb[i];}
   Arr<int> c = b+5;
+  cout << c << endl;
   c=c+0;
+  cout << "test" << endl;
   c[2]=100;
+  cout << "test" << endl;
   cout << endl << t << endl << b << endl << c << endl;
   cout << pow(8,2) << endl;
   cout << c*b << endl << t+c*b << endl << t*c*b+2 << endl << t+c*b+2+pow(b,2) << endl << 10-(t+c*b+2+pow(b,2)) << endl;
@@ -81,7 +84,7 @@ int main(){
   cout << Arr<bool>::And(Arr<int>::Equals(b, 5), comp2) << endl;
 
   Arr<double> d(5);
-  double dd[5] = {4.5,3.4,2.3,1.2,0.1};
+  double dd[5] = {2.3,3.4,2.3,1.2,0.1};
   d=dd;
   cout << d << endl;
 
@@ -100,7 +103,7 @@ int main(){
 
 cout << endl << endl << endl;
 
-  size_t N_array = 10000;
+  size_t N_array = 5;
   size_t N_repeat = 10000;
   int num1 = 5, num2 = 3;
   Arr<int> t1 (N_array, num1);
@@ -109,6 +112,7 @@ cout << endl << endl << endl;
   for(int i=0; i<N_array; i++){t3[i]=num1;}
   int* t4 = new int[N_array];
   for(int i=0; i<N_array; i++){t4[i]=num2;}
+  
 
   Arr<int> r1(N_array);
   int r2[N_array];
@@ -192,7 +196,14 @@ cout << endl << endl << endl;
   Arr<int, 2> dimArr(dim_arr[0],shap);
   cout << endl;
   cout << dimArr << endl;
+  cout << dimArr[0]+5 << endl;
   cout << (dimArr+5) << endl;
   cout << (dimArr>4) << endl;
+  dimArr[1]/=2.5;
+  cout << dimArr << endl;
 
+  Arr<double> dimArrD = dimArr[1];
+  cout << dimArr << endl << dimArrD << endl;
+  dimArrD[2] = 0.021;
+  cout << dimArr << endl << dimArrD << endl;
 } 

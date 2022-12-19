@@ -3,7 +3,9 @@
 
 using namespace std;
 
-template <typename T1, int nDim = 1, typename v = typename enable_if<is_arithmetic<T1>::value, bool>::type>
+int loopRollMin = 4;
+
+template <typename T1, int nDim = 1, typename = enable_if_t<is_arithmetic<T1>::value>>
 struct Arr {
 //~~~~Define a type T for the underlying type of the array data using metaprogramming
   template<int N> struct getType{Arr<T1, N-1> typ;};
@@ -11,81 +13,196 @@ struct Arr {
   using T = typename remove_reference<decltype(getType<nDim>::typ)>::type;
 
   private:
-    T1* memoryBlock;
+    bool memAlloc {false};
+  protected:
+    T1* memoryBlock_ {nullptr};
+    T* arr_ {nullptr};
+    size_t size_ {0};
+    size_t* shap_ {&size_};
   public:
-    mutable T* arr;
-    mutable size_t* shap;
-    mutable size_t size;
+    T1* const& memoryBlock {memoryBlock_};
+    T* const& arr {arr_};
+    size_t const& size {size_};
+    size_t* const& shap {shap_};
+
 //~~~~Constructor and Destructors
   //~~~~1D functions
-    Arr():arr{nullptr}, size(0), shap{&size}, memoryBlock{nullptr}{}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr(const T2* a, const size_t& n):size{n}, shap{&size}, memoryBlock{nullptr}{arr = new T[n]; for(int i=0; i<n; i++){arr[i]=a[i];}}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr(const size_t& n, const T2& num):size{n}, shap{&size}, memoryBlock{nullptr}{arr = new T[n]; for(int i=0; i<n; i++){arr[i]=num;}}
-    Arr(const size_t& n):size{n}, shap{&size}, memoryBlock{nullptr}{arr = new T[n];}
+    Arr(){}
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    Arr(const T2* a, const size_t& n):size_{n}, memAlloc{true}{memoryBlock_ = new T1[n]; for(int i=0; i<n; i++){memoryBlock_[i]=a[i];} arr_=memoryBlock_;}
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    Arr(const size_t& n, const T2& num):size_{n}, memAlloc{true}{memoryBlock_ = new T1[n]; for(int i=0; i<n; i++){memoryBlock_[i]=num;} arr_=memoryBlock_;}
+    Arr(const size_t& n):size_{n}, memAlloc{true}{memoryBlock_ = new T1[n];arr_=memoryBlock_;}
 
   //~~~~nD functions
-    template <typename T2>
-    Arr(const T2* a, const size_t* sh):size{1}{
-      shap = new size_t[nDim]; 
-      for (int i=0; i<nDim; i++){
-        shap[i] = sh[i]; size*=shap[i];
-      } 
-      memoryBlock = new T1[size];
-      for(int i=0; i<size; i++){
-        memoryBlock[i]=a[i];
-      }
-      arr = new T[shap[0]];
-      for (int i=0; i<shap[0]; i++){
-        arr[i] = T(&memoryBlock[i*size/sh[0]], &sh[1], nDim-1);
-      }
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    Arr(const T2* a, const size_t* sh):size_{1}, memAlloc{true}{
+        if constexpr(nDim>1){
+            shap_ = new size_t[nDim];
+            for (int i=0; i<nDim; i++){
+                shap_[i] = sh[i]; size_*=shap_[i];
+            } 
+            memoryBlock_ = new T1[size_];
+            for(int i=0; i<size_; i++){
+                memoryBlock_[i]=a[i];
+            }
+            arr_ = new T[shap_[0]];
+            for (int i=0; i<shap_[0]; i++){
+                arr_[i] = T(&memoryBlock_[i*size_/sh[0]], &sh[1], nDim-1);
+            }
+        }else{
+            size_ = sh[0];
+            shap_ = &size_;
+            memoryBlock_ = new T1[size_];
+            for(int i=0; i<size_; i++){
+                memoryBlock_[i]=a[i];
+            }
+            arr_=memoryBlock_;
+        }
     }
 
-    template<typename T2>
-    Arr(T2* a, const size_t* sh, const size_t dims):size{1}{
-      shap = new size_t[nDim]; 
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    Arr(const T2& num, const size_t* sh):size_{1}, memAlloc{true}{
+        if constexpr(nDim>1){
+            shap_ = new size_t[nDim]; 
+            for (int i=0; i<nDim; i++){
+                shap_[i] = sh[i]; size_*=shap_[i];
+            } 
+            memoryBlock_ = new T1[size_];
+            for(int i=0; i<size_; i++){
+                memoryBlock_[i]=num;
+            }
+            arr_ = new T[shap_[0]];
+            for (int i=0; i<shap_[0]; i++){
+                arr_[i] = T(&memoryBlock_[i*size_/sh[0]], &sh[1], nDim-1);
+            }
+        }else{
+            size_ = sh[0];
+            shap_ = &size_;
+            memoryBlock_ = new T1[size_];
+            for(int i=0; i<size_; i++){
+                memoryBlock_[i]=num;
+            }
+            arr_=memoryBlock_;
+        }
+    }
+
+    Arr(const size_t* sh):size_{1}, memAlloc{true}{
+        if constexpr(nDim>1){
+            shap_ = new size_t[nDim]; 
+            for (int i=0; i<nDim; i++){
+                shap_[i] = sh[i]; size_*=shap_[i];
+            } 
+            memoryBlock_ = new T1[size_];
+            arr_ = new T[shap_[0]];
+            for (int i=0; i<shap_[0]; i++){
+                arr_[i] = T(&memoryBlock_[i*size_/sh[0]], &sh[1], nDim-1);
+            }
+        }else{
+            size_ = sh[0];
+            shap_ = &size_;
+            memoryBlock_ = new T1[size_];
+            arr_=memoryBlock_;
+        }
+    }
+
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    Arr(T2* a, const size_t* sh, const size_t dims):size_{1}{
+      shap_ = new size_t[nDim]; 
+      memoryBlock_ = a;
       for (int i=0; i<nDim; i++){
-        shap[i] = sh[i]; size*=shap[i];
+        shap_[i] = sh[i]; size_*=shap_[i];
       }
       if constexpr(nDim==1){
-        arr = a;
+        arr_ = a;
       }else{
-        arr = new T[shap[0]];
-        for (int i=0; i<shap[0]; i++){
-          arr[i] = T(&a[i*size/sh[0]], &sh[1], dims-1);
+        arr_ = new T[shap_[0]];
+        for (int i=0; i<shap_[0]; i++){
+          arr_[i] = T(&a[i*size_/sh[0]], &sh[1], dims-1);
         }
       }
     }
 
-    // template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    // Arr(const size_t* sh, const size_t& dims, const T2& num):size{1}{shap = new size_t[nDim]; for (int i=0; i<nDim; i++){shap[i] = sh[i]; size*=shap[i];} arr = new T[size]; for(int i=0; i<size; i++){arr[i]=num;}}
-    // Arr(const size_t* sh, const size_t& dims):size{1}{shap = new size_t[nDim]; for (int i=0; i<nDim; i++){shap[i] = sh[i]; size*=shap[i];} arr = new T[size];}
+  //~~~~Copy and move constructors
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    Arr(const Arr<T2, nDim>& a):size_{a.size}, memAlloc{true}{
+        memoryBlock_ = new T1[size_]; 
+        for(int i=0; i<size_; i++){
+            memoryBlock_[i]=a.memoryBlock[i];
+        }
+        if constexpr(nDim==1){
+            arr_=memoryBlock_;
+            shap_ = &size_;
+        }else{
+            shap_ = new size_t[nDim]; 
+            for (int i=0; i<nDim; i++){
+                shap_[i] = a.shap[i];
+            } 
+            arr_ = new T[shap_[0]];
+            for (int i=0; i<shap_[0]; i++){
+                arr_[i] = T(&memoryBlock_[i*size_/shap_[0]], &shap_[1], nDim-1);
+            }
+        }
+    }
+    //Copy Constructor
+    Arr(const Arr<T1, nDim>& a):size_{a.size_}, memAlloc{true}{
+        memoryBlock_ = new T1[size_]; 
+        for(int i=0; i<size_; i++){
+            memoryBlock_[i]=a.memoryBlock_[i];
+        }
+        if constexpr(nDim==1){
+            arr_=memoryBlock_;
+            shap_ = &size_;
+        }else{
+            shap_ = new size_t[nDim]; 
+            for (int i=0; i<nDim; i++){
+                shap_[i] = a.shap_[i];
+            } 
+            arr_ = new T[shap_[0]];
+            for (int i=0; i<shap_[0]; i++){
+                arr_[i] = T(&memoryBlock_[i*size_/shap_[0]], &shap_[1], nDim-1);
+            }
+        }
+    }
+    //Move Constructor
+    Arr(Arr<T1, nDim>&& a) noexcept :Arr<T1, nDim>(){
+        swap(*this, a);
+    }
+
+    //Swap Function
+    friend void swap(Arr<T1, nDim>& lhs, Arr<T1, nDim>& rhs){
+        swap(lhs.memoryBlock_, rhs.memoryBlock_);
+        swap(lhs.memAlloc, rhs.memAlloc);
+        swap(lhs.arr_, rhs.arr_);
+        swap(lhs.size_, rhs.size_);
+        if constexpr(nDim==1){      //EDIT: This should reevert back to the else case once shap_ is properally implemented.
+            lhs.shap_ = &lhs.size_;
+        }else{
+            swap(lhs.shap_, rhs.shap_);
+        }
+    }
 
   //~~~~Destructor
     ~Arr(){
-      free(memoryBlock);
-      delete[] arr;
-      if constexpr(nDim > 1){
-        delete[] shap;
-      }
+        if constexpr(nDim>1)
+            delete[] arr_;
+        if constexpr(nDim > 1)
+            delete[] shap_;
+        if (memAlloc)
+            delete [] memoryBlock_;
     }
 
-  //~~~~Copy and move constructor
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr(const Arr<T2, nDim>& a):size{a.size}, shap{a.shap}{arr = new T[a.size]; for(int i=0; i<size; i++){arr[i]=a.arr[i];}}
-    Arr(const Arr<T1, nDim>& a):size{a.size}, shap{a.shap}{arr = new T[a.size]; for(int i=0; i<size; i++){arr[i]=a.arr[i];}}
-    Arr(Arr<T1, nDim>&& a):size{a.size}, arr{a.arr}, shap{a.shap}{a.arr = nullptr; a.size = 0; a.shap=&a.size;}
+//~~~~Access private members directly
+    size_t getSize() const{return size_;}
+    size_t* getShap() const{return shap_;}
+    T* getArr() const{return arr_;}
+    T1* getMemoryBlock() const{return memoryBlock_;}
+    bool getMemAlloc() const{return memAlloc;}
 
-
-// //~~~~Access private members directly
-//     size_t siz() const{return size;}
-//     size_t shap() const{return shap;}
-//     T* ptr() const{return arr;}
 
 //~~~~Overloading access operators
-    T& operator[](const int& ind){return arr[ind];}
-    const T& operator[](const int& ind) const{return arr[ind];}
+    T& operator[](const int& ind){return arr_[ind];}
+    const T& operator[](const int& ind) const{return arr_[ind];}
 
     template<typename... Ints, typename = enable_if_t<conjunction<is_same<Ints, int>...>::value>>
     T& operator()(Ints... inds){
@@ -93,907 +210,971 @@ struct Arr {
       int multiplier=1, offset=0;
       for (int i=sizeof...(inds)-1; i>=0; i--){
         offset+=multiplier*ind[i];
-        multiplier*=shap[i];
+        multiplier*=shap_[i];
       }
-      return memoryBlock[offset];
+      return memoryBlock_[offset];
     }
 
 //~~~~Overloading copy operators
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T1, nDim>& operator=(const Arr<T2, nDim>& arr2){size=arr2.size; for(int i=0; i<size; i++){arr[i]=arr2.arr[i];} return *this;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value || is_arithmetic<remove_pointer<T2> >::value, bool>::type>
-    Arr<T1, nDim>& operator=(const T2* arr2){for(int i=0; i<size; i++){arr[i]=arr2[i];} return *this;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
-    Arr<T1, nDim>& operator=(const T2& num){for(int i=0; i<size; i++){arr[i]=num;} return *this;}
-    Arr<T1, nDim>& operator=(Arr<T1, nDim>&& arr2){delete arr; arr=arr2.arr; size=arr2.size; arr2.arr = nullptr; arr2.size = 0; return *this;}
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    Arr<T1, nDim>& operator=(T2* arr2){
+        for(int i=0; i<size_; i++){
+            memoryBlock_[i]=arr2[i];
+        } 
+        return *this;
+    }
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    Arr<T1, nDim>& operator=(const T2& num){
+        for(int i=0; i<size_; i++){
+            memoryBlock_[i]=num;
+        } 
+        return *this;
+    }
+    Arr<T1, nDim>& operator=(Arr<T1, nDim>&& arr2){
+        Arr<T1, nDim> temp{move(arr2)};
+        swap(*this, temp);
+        return *this;
+    }
+    Arr<T1, nDim>& operator=(const Arr<T1, nDim>& arr2){
+        Arr<T1, nDim> temp{arr2};
+        swap(*this, temp);
+        return *this;
+    }
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    Arr<T1, nDim>& operator=(const Arr<T2, nDim>& arr2){
+        size_ = arr2.size;
+        T2* memoryBlock2 = arr2.memoryBlock;
+        memoryBlock_ = new T1[size_]; 
+        for(int i=0; i<size_; i++){
+            memoryBlock_[i]=memoryBlock2[i];
+        }
+        if constexpr(nDim==1){
+            arr_=memoryBlock_;
+        }else{
+            shap_ = new size_t[nDim]; 
+            for (int i=0; i<nDim; i++){
+                shap_[i] = arr2.shap[i];
+            }
+            arr_ = new T[shap_[0]];
+            for (int i=0; i<shap_[0]; i++){
+                arr_[i] = T(&memoryBlock_[i*size_/shap_[0]], &shap_[1], nDim-1);
+            }
+        }
+        return *this;
+    }
 
 //~~~~Overloading arithmatic operators
   //Addition
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& operator+=(const Arr<T2, nDim>& arr2){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i] += arr2.arr[i];
-              arr[i+1] += arr2.arr[i+1];
-              arr[i+2] += arr2.arr[i+2];
-              arr[i+3] += arr2.arr[i+3];
-          }
-      }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i] += arr2.arr[i];
+        if (size_>=loopRollMin) {
+            T2* ptr = arr2.memoryBlock;
+            for (int i=0; i+3<size_; i += 4) {
+                memoryBlock_[i] += ptr[i];
+                memoryBlock_[i+1] += ptr[i+1];
+                memoryBlock_[i+2] += ptr[i+2];
+                memoryBlock_[i+3] += ptr[i+3];
+            }
+        }
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i] += arr2.memoryBlock[i];
       }
       return *this;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim> operator+(const Arr<T2, nDim>& arr2) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]+arr2.arr[i];
-              res.arr[i+1]=arr[i+1]+arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]+arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]+arr2.arr[i+3];
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]+ptr[i];
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]+ptr[i+1];
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]+ptr[i+2];
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]+ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]+arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]+arr2.memoryBlock[i];
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& operator+=(const T2& num){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i] += num;
-              arr[i+1] += num;
-              arr[i+2] += num;
-              arr[i+3] += num;
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i] += num;
+              memoryBlock_[i+1] += num;
+              memoryBlock_[i+2] += num;
+              memoryBlock_[i+3] += num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i] += num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i] += num;
       }
       return *this;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim> operator+(const T2& num) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]+num;
-              res.arr[i+1]=arr[i+1]+num;
-              res.arr[i+2]=arr[i+2]+num;
-              res.arr[i+3]=arr[i+3]+num;
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]+num;
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]+num;
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]+num;
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]+num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]+num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]+num;
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     friend Arr<T1, nDim> operator+(const T2& num, const Arr<T1, nDim>& arr){
-      Arr<T1, nDim> res(arr.size);
-      if (arr.size>=4) {
-          for (int i=0; i<arr.size; i += 4) {
-              res.arr[i]=arr.arr[i]+num;
-              res.arr[i+1]=arr.arr[i+1]+num;
-              res.arr[i+2]=arr.arr[i+2]+num;
-              res.arr[i+3]=arr.arr[i+3]+num;
+      Arr<T1, nDim> res(arr.size_);
+      if (arr.size_>=4) {
+          for (int i=0; i<arr.size_; i += 4) {
+              res.memoryBlock_[i]=arr.memoryBlock_[i]+num;
+              res.memoryBlock_[i+1]=arr.memoryBlock_[i+1]+num;
+              res.memoryBlock_[i+2]=arr.memoryBlock_[i+2]+num;
+              res.memoryBlock_[i+3]=arr.memoryBlock_[i+3]+num;
           }
       }
-      for (int i = (arr.size/4)*4; i<arr.size; ++i) {
-          res.arr[i]=arr[i]+num;
+      for (int i = (arr.size_/4)*4; i<arr.size_; ++i) {
+          res.memoryBlock_[i]=arr.memoryBlock_[i]+num;
       }
       return res;
     }
 
   //Subtraction
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& operator-=(const Arr<T2, nDim>& arr2){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i] -= arr2.arr[i];
-              arr[i+1] -= arr2.arr[i+1];
-              arr[i+2] -= arr2.arr[i+2];
-              arr[i+3] -= arr2.arr[i+3];
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i] -= ptr[i];
+              memoryBlock_[i+1] -= ptr[i+1];
+              memoryBlock_[i+2] -= ptr[i+2];
+              memoryBlock_[i+3] -= ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i] -= arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i] -= arr2.memoryBlock[i];
       }
       return *this;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim> operator-(const Arr<T2, nDim>& arr2) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]-arr2.arr[i];
-              res.arr[i+1]=arr[i+1]-arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]-arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]-arr2.arr[i+3];
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]-ptr[i];
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]-ptr[i+1];
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]-ptr[i+2];
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]-ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]-arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]-arr2.memoryBlock[i];
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& operator-=(const T2& num){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i] -= num;
-              arr[i+1] -= num;
-              arr[i+2] -= num;
-              arr[i+3] -= num;
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i] -= num;
+              memoryBlock_[i+1] -= num;
+              memoryBlock_[i+2] -= num;
+              memoryBlock_[i+3] -= num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i] -= num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i] -= num;
       }
       return *this;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim> operator-(const T2& num) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]-num;
-              res.arr[i+1]=arr[i+1]-num;
-              res.arr[i+2]=arr[i+2]-num;
-              res.arr[i+3]=arr[i+3]-num;
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]-num;
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]-num;
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]-num;
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]-num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]-num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]-num;
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     friend Arr<T1, nDim> operator-(const T2& num, const Arr<T1, nDim>& arr){
-      Arr<T1, nDim> res(arr.size);
-      if (arr.size>=4) {
-          for (int i=0; i<arr.size; i += 4) {
-              res.arr[i]=arr.arr[i]-num;
-              res.arr[i+1]=arr.arr[i+1]-num;
-              res.arr[i+2]=arr.arr[i+2]-num;
-              res.arr[i+3]=arr.arr[i+3]-num;
+      Arr<T1, nDim> res(arr.size_);
+      if (arr.size_>=4) {
+          for (int i=0; i<arr.size_; i += 4) {
+              res.memoryBlock_[i]=arr.memoryBlock_[i]-num;
+              res.memoryBlock_[i+1]=arr.memoryBlock_[i+1]-num;
+              res.memoryBlock_[i+2]=arr.memoryBlock_[i+2]-num;
+              res.memoryBlock_[i+3]=arr.memoryBlock_[i+3]-num;
           }
       }
-      for (int i = (arr.size/4)*4; i<arr.size; ++i) {
-          res.arr[i]=arr[i]-num;
+      for (int i = (arr.size_/4)*4; i<arr.size_; ++i) {
+          res.memoryBlock_[i]=arr.memoryBlock_[i]-num;
       }
       return res;
     }
 
   //Multiply
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& operator*=(const Arr<T2, nDim>& arr2){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i] *= arr2.arr[i];
-              arr[i+1] *= arr2.arr[i+1];
-              arr[i+2] *= arr2.arr[i+2];
-              arr[i+3] *= arr2.arr[i+3];
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i] *= ptr[i];
+              memoryBlock_[i+1] *= ptr[i+1];
+              memoryBlock_[i+2] *= ptr[i+2];
+              memoryBlock_[i+3] *= ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i] *= arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i] *= arr2.memoryBlock[i];
       }
       return *this;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim> operator*(const Arr<T2, nDim>& arr2) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]*arr2.arr[i];
-              res.arr[i+1]=arr[i+1]*arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]*arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]*arr2.arr[i+3];
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]*ptr[i];
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]*ptr[i+1];
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]*ptr[i+2];
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]*ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]*arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]*arr2.memoryBlock[i];
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& operator*=(const T2& num){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i] *= num;
-              arr[i+1] *= num;
-              arr[i+2] *= num;
-              arr[i+3] *= num;
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i] *= num;
+              memoryBlock_[i+1] *= num;
+              memoryBlock_[i+2] *= num;
+              memoryBlock_[i+3] *= num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i] *= num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i] *= num;
       }
       return *this;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim> operator*(const T2& num) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]*num;
-              res.arr[i+1]=arr[i+1]*num;
-              res.arr[i+2]=arr[i+2]*num;
-              res.arr[i+3]=arr[i+3]*num;
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]*num;
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]*num;
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]*num;
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]*num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]*num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]*num;
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     friend Arr<T1, nDim> operator*(const T2& num, const Arr<T1, nDim>& arr){
-      Arr<T1, nDim> res(arr.size);
-      if (arr.size>=4) {
-          for (int i=0; i<arr.size; i += 4) {
-              res.arr[i]=arr.arr[i]*num;
-              res.arr[i+1]=arr.arr[i+1]*num;
-              res.arr[i+2]=arr.arr[i+2]*num;
-              res.arr[i+3]=arr.arr[i+3]*num;
+      Arr<T1, nDim> res(arr.size_);
+      if (arr.size_>=4) {
+          for (int i=0; i<arr.size_; i += 4) {
+              res.memoryBlock_[i]=arr.memoryBlock_[i]*num;
+              res.memoryBlock_[i+1]=arr.memoryBlock_[i+1]*num;
+              res.memoryBlock_[i+2]=arr.memoryBlock_[i+2]*num;
+              res.memoryBlock_[i+3]=arr.memoryBlock_[i+3]*num;
           }
       }
-      for (int i = (arr.size/4)*4; i<arr.size; ++i) {
-          res.arr[i]=arr[i]*num;
+      for (int i = (arr.size_/4)*4; i<arr.size_; ++i) {
+          res.memoryBlock_[i]=arr.memoryBlock_[i]*num;
       }
       return res;
     }
 
   //Divide
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& operator/=(const Arr<T2, nDim>& arr2){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i] /= arr2.arr[i];
-              arr[i+1] /= arr2.arr[i+1];
-              arr[i+2] /= arr2.arr[i+2];
-              arr[i+3] /= arr2.arr[i+3];
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i] /= ptr[i];
+              memoryBlock_[i+1] /= ptr[i+1];
+              memoryBlock_[i+2] /= ptr[i+2];
+              memoryBlock_[i+3] /= ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i] /= arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i] /= arr2.memoryBlock[i];
       }
       return *this;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim> operator/(const Arr<T2, nDim>& arr2) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]/arr2.arr[i];
-              res.arr[i+1]=arr[i+1]/arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]/arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]/arr2.arr[i+3];
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]/ptr[i];
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]/ptr[i+1];
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]/ptr[i+2];
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]/ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]/arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]/arr2.memoryBlock[i];
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& operator/=(const T2& num){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i] /= num;
-              arr[i+1] /= num;
-              arr[i+2] /= num;
-              arr[i+3] /= num;
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i] /= num;
+              memoryBlock_[i+1] /= num;
+              memoryBlock_[i+2] /= num;
+              memoryBlock_[i+3] /= num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i] /= num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i] /= num;
       }
       return *this;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim> operator/(const T2& num) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]/num;
-              res.arr[i+1]=arr[i+1]/num;
-              res.arr[i+2]=arr[i+2]/num;
-              res.arr[i+3]=arr[i+3]/num;
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]/num;
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]/num;
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]/num;
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]/num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]/num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]/num;
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     friend Arr<T1, nDim> operator/(const T2& num, const Arr<T1, nDim>& arr){
-      Arr<T1, nDim> res(arr.size);
-      if (arr.size>=4) {
-          for (int i=0; i<arr.size; i += 4) {
-              res.arr[i]=arr.arr[i]/num;
-              res.arr[i+1]=arr.arr[i+1]/num;
-              res.arr[i+2]=arr.arr[i+2]/num;
-              res.arr[i+3]=arr.arr[i+3]/num;
+      Arr<T1, nDim> res(arr.size_);
+      if (arr.size_>=4) {
+          for (int i=0; i<arr.size_; i += 4) {
+              res.memoryBlock_[i]=arr.memoryBlock_[i]/num;
+              res.memoryBlock_[i+1]=arr.memoryBlock_[i+1]/num;
+              res.memoryBlock_[i+2]=arr.memoryBlock_[i+2]/num;
+              res.memoryBlock_[i+3]=arr.memoryBlock_[i+3]/num;
           }
       }
-      for (int i = (arr.size/4)*4; i<arr.size; ++i) {
-          res.arr[i]=arr[i]/num;
+      for (int i = (arr.size_/4)*4; i<arr.size_; ++i) {
+          res.memoryBlock_[i]=arr.memoryBlock_[i]/num;
       }
       return res;
     }
 
   //Exp
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     friend Arr<T1, nDim> pow(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){
-      Arr<T1, nDim> res(arr1.size);
-      if (arr1.size>=4) {
-          for (int i=0; i<arr1.size; i += 4) {
-              res.arr[i]=pow(arr1.arr[i],arr2.arr[i]);
-              res.arr[i+1]=pow(arr1.arr[i+1],arr2.arr[i+1]);
-              res.arr[i+2]=pow(arr1.arr[i+2],arr2.arr[i+2]);
-              res.arr[i+3]=pow(arr1.arr[i+3],arr2.arr[i+3]);
+      Arr<T1, nDim> res(arr1.size_);
+      if (arr1.size_>=4) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i<arr1.size_; i += 4) {
+              res.memoryBlock_[i]=pow(arr1.memoryBlock_[i],ptr[i]);
+              res.memoryBlock_[i+1]=pow(arr1.memoryBlock_[i+1],ptr[i+1]);
+              res.memoryBlock_[i+2]=pow(arr1.memoryBlock_[i+2],ptr[i+2]);
+              res.memoryBlock_[i+3]=pow(arr1.memoryBlock_[i+3],ptr[i+3]);
           }
       }
-      for (int i = (arr1.size/4)*4; i<arr1.size; ++i) {
-          res.arr[i]=pow(arr1.arr[i],arr2.arr[i]);;
+      for (int i = (arr1.size_/4)*4; i<arr1.size_; ++i) {
+          res.memoryBlock_[i]=pow(arr1.memoryBlock_[i],arr2.memoryBlock[i]);;
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     friend Arr<T1, nDim> pow(const Arr<T1, nDim>& arr1, const T2& num){
-      Arr<T1, nDim> res(arr1.size);
-      if (arr1.size>=4) {
-          for (int i=0; i<arr1.size; i += 4) {
-              res.arr[i]=pow(arr1.arr[i],num);
-              res.arr[i+1]=pow(arr1.arr[i+1],num);
-              res.arr[i+2]=pow(arr1.arr[i+2],num);
-              res.arr[i+3]=pow(arr1.arr[i+3],num);
+      Arr<T1, nDim> res(arr1.size_);
+      if (arr1.size_>=4) {
+          for (int i=0; i<arr1.size_; i += 4) {
+              res.memoryBlock_[i]=pow(arr1.memoryBlock_[i],num);
+              res.memoryBlock_[i+1]=pow(arr1.memoryBlock_[i+1],num);
+              res.memoryBlock_[i+2]=pow(arr1.memoryBlock_[i+2],num);
+              res.memoryBlock_[i+3]=pow(arr1.memoryBlock_[i+3],num);
           }
       }
-      for (int i = (arr1.size/4)*4; i<arr1.size; ++i) {
-          res.arr[i]=pow(arr1.arr[i],num);;
+      for (int i = (arr1.size_/4)*4; i<arr1.size_; ++i) {
+          res.memoryBlock_[i]=pow(arr1.memoryBlock_[i],num);;
       }
       return res;
     }
   //Mod
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& operator%=(const Arr<T2, nDim>& arr2){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i] %= arr2.arr[i];
-              arr[i+1] %= arr2.arr[i+1];
-              arr[i+2] %= arr2.arr[i+2];
-              arr[i+3] %= arr2.arr[i+3];
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i] %= ptr[i];
+              memoryBlock_[i+1] %= ptr[i+1];
+              memoryBlock_[i+2] %= ptr[i+2];
+              memoryBlock_[i+3] %= ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i] %= arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i] %= arr2.memoryBlock[i];
       }
       return *this;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim> operator%(const Arr<T2, nDim>& arr2) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]%arr2.arr[i];
-              res.arr[i+1]=arr[i+1]%arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]%arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]%arr2.arr[i+3];
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]%ptr[i];
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]%ptr[i+1];
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]%ptr[i+2];
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]%ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]%arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]%arr2.memoryBlock[i];
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& operator%=(const T2& num){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i] %= num;
-              arr[i+1] %= num;
-              arr[i+2] %= num;
-              arr[i+3] %= num;
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i] %= num;
+              memoryBlock_[i+1] %= num;
+              memoryBlock_[i+2] %= num;
+              memoryBlock_[i+3] %= num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i] %= num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i] %= num;
       }
       return *this;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim> operator%(const T2& num) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]%num;
-              res.arr[i+1]=arr[i+1]%num;
-              res.arr[i+2]=arr[i+2]%num;
-              res.arr[i+3]=arr[i+3]%num;
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]%num;
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]%num;
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]%num;
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]%num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]%num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]%num;
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     friend Arr<T1, nDim> operator%(const T2& num, const Arr<T1, nDim>& arr){
-      Arr<T1, nDim> res(arr.size);
-      if (arr.size>=4) {
-          for (int i=0; i<arr.size; i += 4) {
-              res.arr[i]=arr.arr[i]%num;
-              res.arr[i+1]=arr.arr[i+1]%num;
-              res.arr[i+2]=arr.arr[i+2]%num;
-              res.arr[i+3]=arr.arr[i+3]%num;
+      Arr<T1, nDim> res(arr.size_);
+      if (arr.size_>=4) {
+          for (int i=0; i<arr.size_; i += 4) {
+              res.memoryBlock_[i]=arr.memoryBlock_[i]%num;
+              res.memoryBlock_[i+1]=arr.memoryBlock_[i+1]%num;
+              res.memoryBlock_[i+2]=arr.memoryBlock_[i+2]%num;
+              res.memoryBlock_[i+3]=arr.memoryBlock_[i+3]%num;
           }
       }
-      for (int i = (arr.size/4)*4; i<arr.size; ++i) {
-          res.arr[i]=arr[i]%num;
+      for (int i = (arr.size_/4)*4; i<arr.size_; ++i) {
+          res.memoryBlock_[i]=arr.memoryBlock_[i]%num;
       }
       return res;
     }
 
 
 //~~~~Overloading comparrison operators for array return type
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator==(const Arr<T2, nDim>& arr2) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]==arr2.arr[i];
-              res.arr[i+1]=arr[i+1]==arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]==arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]==arr2.arr[i+3];
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]==ptr[i];
+              res.memoryBlock[i+1]=memoryBlock_[i+1]==ptr[i+1];
+              res.memoryBlock[i+2]=memoryBlock_[i+2]==ptr[i+2];
+              res.memoryBlock[i+3]=memoryBlock_[i+3]==ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]==arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]==arr2.memoryBlock[i];
       }
       return res;
     }
     Arr<bool, nDim> operator!() const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=!arr[i];
-              res.arr[i+1]=!arr[i+1];
-              res.arr[i+2]=!arr[i+2];
-              res.arr[i+3]=!arr[i+3];
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=!memoryBlock_[i];
+              res.memoryBlock[i+1]=!memoryBlock_[i+1];
+              res.memoryBlock[i+2]=!memoryBlock_[i+2];
+              res.memoryBlock[i+3]=!memoryBlock_[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=!arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=!memoryBlock_[i];
       }
-      for(int i=0; i<size; i++){res.arr[i]=!arr[i];}
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator!=(const Arr<T2, nDim>& arr2) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]!=arr2.arr[i];
-              res.arr[i+1]=arr[i+1]!=arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]!=arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]!=arr2.arr[i+3];
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]!=ptr[i];
+              res.memoryBlock[i+1]=memoryBlock_[i+1]!=ptr[i+1];
+              res.memoryBlock[i+2]=memoryBlock_[i+2]!=ptr[i+2];
+              res.memoryBlock[i+3]=memoryBlock_[i+3]!=ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]!=arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]!=arr2.memoryBlock[i];
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator>=(const Arr<T2, nDim>& arr2) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]>=arr2.arr[i];
-              res.arr[i+1]=arr[i+1]>=arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]>=arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]>=arr2.arr[i+3];
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]>=ptr[i];
+              res.memoryBlock[i+1]=memoryBlock_[i+1]>=ptr[i+1];
+              res.memoryBlock[i+2]=memoryBlock_[i+2]>=ptr[i+2];
+              res.memoryBlock[i+3]=memoryBlock_[i+3]>=ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]>=arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]>=arr2.memoryBlock[i];
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator>(const Arr<T2, nDim>& arr2) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]>arr2.arr[i];
-              res.arr[i+1]=arr[i+1]>arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]>arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]>arr2.arr[i+3];
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]>ptr[i];
+              res.memoryBlock[i+1]=memoryBlock_[i+1]>ptr[i+1];
+              res.memoryBlock[i+2]=memoryBlock_[i+2]>ptr[i+2];
+              res.memoryBlock[i+3]=memoryBlock_[i+3]>ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]>arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]>arr2.memoryBlock[i];
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator<=(const Arr<T2, nDim>& arr2) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]<=arr2.arr[i];
-              res.arr[i+1]=arr[i+1]<=arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]<=arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]<=arr2.arr[i+3];
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]<=ptr[i];
+              res.memoryBlock[i+1]=memoryBlock_[i+1]<=ptr[i+1];
+              res.memoryBlock[i+2]=memoryBlock_[i+2]<=ptr[i+2];
+              res.memoryBlock[i+3]=memoryBlock_[i+3]<=ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]<=arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]<=arr2.memoryBlock[i];
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator<(const Arr<T2, nDim>& arr2) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]<arr2.arr[i];
-              res.arr[i+1]=arr[i+1]<arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]<arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]<arr2.arr[i+3];
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+        T2* ptr = arr2.memoryBlock;
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]<ptr[i];
+              res.memoryBlock[i+1]=memoryBlock_[i+1]<ptr[i+1];
+              res.memoryBlock[i+2]=memoryBlock_[i+2]<ptr[i+2];
+              res.memoryBlock[i+3]=memoryBlock_[i+3]<ptr[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]<arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]<arr2.memoryBlock[i];
       }
       return res;
     }
 
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator==(const T2& num) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]==num;
-              res.arr[i+1]=arr[i+1]==num;
-              res.arr[i+2]=arr[i+2]==num;
-              res.arr[i+3]=arr[i+3]==num;
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]==num;
+              res.memoryBlock[i+1]=memoryBlock_[i+1]==num;
+              res.memoryBlock[i+2]=memoryBlock_[i+2]==num;
+              res.memoryBlock[i+3]=memoryBlock_[i+3]==num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]==num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]==num;
       }
-      for(int i=0; i<size; i++){res.arr[i]=arr[i]==num;}
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator!=(const T2& num) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]!=num;
-              res.arr[i+1]=arr[i+1]!=num;
-              res.arr[i+2]=arr[i+2]!=num;
-              res.arr[i+3]=arr[i+3]!=num;
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]!=num;
+              res.memoryBlock[i+1]=memoryBlock_[i+1]!=num;
+              res.memoryBlock[i+2]=memoryBlock_[i+2]!=num;
+              res.memoryBlock[i+3]=memoryBlock_[i+3]!=num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]!=num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]!=num;
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator>=(const T2& num) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]>=num;
-              res.arr[i+1]=arr[i+1]>=num;
-              res.arr[i+2]=arr[i+2]>=num;
-              res.arr[i+3]=arr[i+3]>=num;
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]>=num;
+              res.memoryBlock[i+1]=memoryBlock_[i+1]>=num;
+              res.memoryBlock[i+2]=memoryBlock_[i+2]>=num;
+              res.memoryBlock[i+3]=memoryBlock_[i+3]>=num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]>=num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]>=num;
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator>(const T2& num) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]>num;
-              res.arr[i+1]=arr[i+1]>num;
-              res.arr[i+2]=arr[i+2]>num;
-              res.arr[i+3]=arr[i+3]>num;
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]>num;
+              res.memoryBlock[i+1]=memoryBlock_[i+1]>num;
+              res.memoryBlock[i+2]=memoryBlock_[i+2]>num;
+              res.memoryBlock[i+3]=memoryBlock_[i+3]>num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]>num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]>num;
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator<=(const T2& num) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]<=num;
-              res.arr[i+1]=arr[i+1]<=num;
-              res.arr[i+2]=arr[i+2]<=num;
-              res.arr[i+3]=arr[i+3]<=num;
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]<=num;
+              res.memoryBlock[i+1]=memoryBlock_[i+1]<=num;
+              res.memoryBlock[i+2]=memoryBlock_[i+2]<=num;
+              res.memoryBlock[i+3]=memoryBlock_[i+3]<=num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]<=num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]<=num;
       }
       return res;
     }
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> operator<(const T2& num) const{
-      Arr<bool, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]<num;
-              res.arr[i+1]=arr[i+1]<num;
-              res.arr[i+2]=arr[i+2]<num;
-              res.arr[i+3]=arr[i+3]<num;
+      Arr<bool, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock[i]=memoryBlock_[i]<num;
+              res.memoryBlock[i+1]=memoryBlock_[i+1]<num;
+              res.memoryBlock[i+2]=memoryBlock_[i+2]<num;
+              res.memoryBlock[i+3]=memoryBlock_[i+3]<num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]<num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock[i]=memoryBlock_[i]<num;
       }
       return res;
     }
 
 
 //~~~~Safe functions for the overloaded operators
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Add(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)+=arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Sub(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)-=arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Mult(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)*=arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Div(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)/=arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Mod(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)%=arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Pow(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return pow((*this),arr2);}
 
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> Equals(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)==arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> NotEquals(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)!=arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> Greater(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)>arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> GreaterEquals(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)>=arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> Less(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)<arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> LessEquals(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)<=arr2;}
 
 //~~~~Safe Functions for number input
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Add(const T2& num){CheckCompatability((*this),num); return (*this)+=num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Sub(const T2& num){CheckCompatability((*this),num); return (*this)-=num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Mult(const T2& num){CheckCompatability((*this),num); return (*this)*=num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Div(const T2& num){CheckCompatability((*this),num); return (*this)/=num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Mod(const T2& num){CheckCompatability((*this),num); return (*this)%=num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<T1, nDim>& Pow(const T2& num){CheckCompatability((*this),num); return pow((*this),num);}
 
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> Equals(const T2& num) const{CheckCompatability((*this),num); return (*this)==num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> NotEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)!=num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> Greater(const T2& num) const{CheckCompatability((*this),num); return (*this)>num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> GreaterEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)>=num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> Less(const T2& num) const{CheckCompatability((*this),num); return (*this)<num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     Arr<bool, nDim> LessEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)<=num;}
 
 
 
 //~~~~Safe Static functions for the overloaded operators
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Add(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1+arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Sub(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1-arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Mult(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1*arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Div(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1/arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Mod(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1%arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Pow(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return pow(arr1,arr2);}
 
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> Equals(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1==arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> NotEquals(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1!=arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> Greater(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1>arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> GreaterEquals(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1>=arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> Less(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1<arr2;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> LessEquals(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1<=arr2;}
 
 //~~~~Static safe function for number input
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Add(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1+num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Sub(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1-num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Mult(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1*num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Div(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1/num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Mod(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1%num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<T1, nDim> Pow(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return pow(arr1,num);}
 
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> Equals(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1==num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> NotEquals(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1!=num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> Greater(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1>num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> GreaterEquals(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1>=num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> Less(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1<num;}
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static Arr<bool, nDim> LessEquals(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1<=num;}
 
 
 
 
 //~~~~Case specific comparison operator overload
-    template <bool>
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim>& operator&=(const Arr<bool, nDim>& arr2){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i]=arr[i]&&arr2.arr[i];
-              arr[i+1]=arr[i+1]&&arr2.arr[i+1];
-              arr[i+2]=arr[i+2]&&arr2.arr[i+2];
-              arr[i+3]=arr[i+3]&&arr2.arr[i+3];
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i]=memoryBlock_[i]&&arr2.memoryBlock_[i];
+              memoryBlock_[i+1]=memoryBlock_[i+1]&&arr2.memoryBlock_[i+1];
+              memoryBlock_[i+2]=memoryBlock_[i+2]&&arr2.memoryBlock_[i+2];
+              memoryBlock_[i+3]=memoryBlock_[i+3]&&arr2.memoryBlock_[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i]=arr[i]!=arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i]=memoryBlock_[i]&&arr2.memoryBlock_[i];
       }
       return *this;
     }
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim> operator&&(const Arr<bool, nDim>& arr2) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]&&arr2.arr[i];
-              res.arr[i+1]=arr[i+1]&&arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]&&arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]&&arr2.arr[i+3];
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]&&arr2.memoryBlock_[i];
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]&&arr2.memoryBlock_[i+1];
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]&&arr2.memoryBlock_[i+2];
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]&&arr2.memoryBlock_[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]!=arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]&&arr2.memoryBlock_[i];
       }
       return res;
     }
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim>& operator&=(const bool& num){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i]=arr[i]&&num;
-              arr[i+1]=arr[i+1]&&num;
-              arr[i+2]=arr[i+2]&&num;
-              arr[i+3]=arr[i+3]&&num;
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i]=memoryBlock_[i]&&num;
+              memoryBlock_[i+1]=memoryBlock_[i+1]&&num;
+              memoryBlock_[i+2]=memoryBlock_[i+2]&&num;
+              memoryBlock_[i+3]=memoryBlock_[i+3]&&num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i]=arr[i]!=num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i]=memoryBlock_[i]!=num;
       }
       return *this;
     }
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim> operator&&(const bool& num) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]&&num;
-              res.arr[i+1]=arr[i+1]&&num;
-              res.arr[i+2]=arr[i+2]&&num;
-              res.arr[i+3]=arr[i+3]&&num;
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]&&num;
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]&&num;
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]&&num;
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]&&num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]!=num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]!=num;
       }
       return res;
     }
 
-    template <bool>
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim>& operator|=(const Arr<bool, nDim>& arr2){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i]=arr[i]||arr2.arr[i];
-              arr[i+1]=arr[i+1]||arr2.arr[i+1];
-              arr[i+2]=arr[i+2]||arr2.arr[i+2];
-              arr[i+3]=arr[i+3]||arr2.arr[i+3];
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i]=memoryBlock_[i]||arr2.memoryBlock_[i];
+              memoryBlock_[i+1]=memoryBlock_[i+1]||arr2.memoryBlock_[i+1];
+              memoryBlock_[i+2]=memoryBlock_[i+2]||arr2.memoryBlock_[i+2];
+              memoryBlock_[i+3]=memoryBlock_[i+3]||arr2.memoryBlock_[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i]=arr[i]!=arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i]=memoryBlock_[i]||arr2.memoryBlock_[i];
       }
       return *this;
     }
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim> operator||(const Arr<bool, nDim>& arr2) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]||arr2.arr[i];
-              res.arr[i+1]=arr[i+1]||arr2.arr[i+1];
-              res.arr[i+2]=arr[i+2]||arr2.arr[i+2];
-              res.arr[i+3]=arr[i+3]||arr2.arr[i+3];
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]||arr2.memoryBlock_[i];
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]||arr2.memoryBlock_[i+1];
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]||arr2.memoryBlock_[i+2];
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]||arr2.memoryBlock_[i+3];
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]!=arr2.arr[i];
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]||arr2.memoryBlock_[i];
       }
       return res;
     }
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim>& operator|=(const bool& num){
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              arr[i]=arr[i]||num;
-              arr[i+1]=arr[i+1]||num;
-              arr[i+2]=arr[i+2]||num;
-              arr[i+3]=arr[i+3]||num;
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              memoryBlock_[i]=memoryBlock_[i]||num;
+              memoryBlock_[i+1]=memoryBlock_[i+1]||num;
+              memoryBlock_[i+2]=memoryBlock_[i+2]||num;
+              memoryBlock_[i+3]=memoryBlock_[i+3]||num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          arr[i]=arr[i]!=num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          memoryBlock_[i]=memoryBlock_[i]!=num;
       }
       return *this;
     }
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim> operator||(const bool& num) const{
-      Arr<T1, nDim> res(size);
-      if (size>=4) {
-          for (int i=0; i+3<size; i += 4) {
-              res.arr[i]=arr[i]||num;
-              res.arr[i+1]=arr[i+1]||num;
-              res.arr[i+2]=arr[i+2]||num;
-              res.arr[i+3]=arr[i+3]||num;
+      Arr<T1, nDim> res(shap_);
+      if (size_>=loopRollMin) {
+          for (int i=0; i+3<size_; i += 4) {
+              res.memoryBlock_[i]=memoryBlock_[i]||num;
+              res.memoryBlock_[i+1]=memoryBlock_[i+1]||num;
+              res.memoryBlock_[i+2]=memoryBlock_[i+2]||num;
+              res.memoryBlock_[i+3]=memoryBlock_[i+3]||num;
           }
       }
-      for (int i = (size/4)*4; i<size; ++i) {
-          res.arr[i]=arr[i]!=num;
+      for (int i = (size_/4)*4; i<size_; ++i) {
+          res.memoryBlock_[i]=memoryBlock_[i]!=num;
       }
       return res;
     }
 
 //~~~~Safe boolean comparison
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim>& And(const Arr<bool, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)&=arr2;}
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim>& Or(const Arr<bool, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)|=arr2;}
 
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim>& And(const bool& num){CheckCompatability((*this),num); return (*this)&=num;}
+    template<typename v3 = T1, typename = enable_if_t<is_same<v3, bool>::value>>
     Arr<bool, nDim>& Or(const bool& num){CheckCompatability((*this),num); return (*this)|=num;}
 
 //~~~~Static safe boolean comparison
@@ -1005,13 +1186,12 @@ struct Arr {
 
 //~~~~Overloading output operators
     friend ostream& operator<<(ostream& os, const Arr<T1, nDim>& a){
-        os << "hello" << endl;
-     if (a.shap[0]>0) {
+     if (a.shap_[0]>0) {
        os << "[";
-       for(int i=0; i<a.shap[0]-1; i++){
-         os << a.arr[i] << ", ";
+       for(int i=0; i<a.shap_[0]-1; i++){
+         os << a.arr_[i] << ", ";
        }
-       os << a[a.shap[0]-1] << "]";
+       os << a[a.shap_[0]-1] << "]";
      }else{
        os << "[]";
      }
@@ -1019,15 +1199,15 @@ struct Arr {
     }
 
 //~~~~Functions to check compatability
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static inline void CheckCompatability (const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){
       if (arr1.size!=arr2.size)
         throw invalid_argument(string("Arrays must have the same length, arr1_size: ") + to_string(arr1.size) + string(", and arr2_size: ") + to_string(arr2.size));
-      if (!is_convertible<T, T2>::value)
+      if (!is_convertible<T1, T2>::value)
         throw invalid_argument(string("Arrays must have the same typr, arr1_size: ") + string(typeid(T).name()) + string(", and arr2_size: ") + string(typeid(T2).name()));
     }
 
-    template <typename T2, typename v2 = typename enable_if<is_arithmetic<T2>::value, bool>::type>
+    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
     static inline void CheckCompatability (const Arr<T1, nDim>& arr1, const T2& num){
       if (!is_convertible<T, T2>::value)
         throw invalid_argument(string("Arrays must have the same typr, arr1_size: ") + string(typeid(T).name()) + string(", and arr2_size: ") + string(typeid(T2).name()));
