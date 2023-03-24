@@ -103,7 +103,7 @@ int main(){
 
 cout << endl << endl << endl;
 
-  size_t N_array = 5;
+  size_t N_array = 10000;
   size_t N_repeat = 10000;
   int num1 = 5, num2 = 3;
   Arr<int> t1 (N_array, num1);

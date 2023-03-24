@@ -3,10 +3,10 @@
 
 using namespace std;
 
-int loopRollMin = 4;
+constexpr int loopRollMin = 4;
 
 template <typename T1, int nDim = 1, typename = enable_if_t<is_arithmetic<T1>::value>>
-struct Arr {
+class Arr {
 //~~~~Define a type T for the underlying type of the array data using metaprogramming
   template<int N> struct getType{Arr<T1, N-1> typ;};
   template<>struct getType<1>{T1 typ;};
