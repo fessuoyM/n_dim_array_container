@@ -12,3 +12,4 @@ Done:
 -Need to use the protected variables when there is T2 is not defined and the same class would be called for the other variable.
 -assign pointer before loop so compilaer can optimize
 -make bool specific operstions only availbe for bool class
+-check/fix shape implementation and 1-d exceptions

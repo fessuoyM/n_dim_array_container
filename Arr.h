@@ -1,24 +1,25 @@
 #include <iostream>
 #include <math.h>
+#include <type_traits>
 
 using namespace std;
 
 constexpr int loopRollMin = 4;
 
-template <typename T1, int nDim = 1, typename = enable_if_t<is_arithmetic<T1>::value>>
+template <typename T1, int nDim = 1>
 class Arr {
 //~~~~Define a type T for the underlying type of the array data using metaprogramming
   template<int N> struct getType{Arr<T1, N-1> typ;};
   template<>struct getType<1>{T1 typ;};
-  using T = typename remove_reference<decltype(getType<nDim>::typ)>::type;
-
+  using T = remove_reference_t<decltype(getType<nDim>::typ)>;
+  
   private:
     bool memAlloc {false};
   protected:
     T1* memoryBlock_ {nullptr};
     T* arr_ {nullptr};
     size_t size_ {0};
-    size_t* shap_ {&size_};
+    size_t* shap_ {nullptr};
   public:
     T1* const& memoryBlock {memoryBlock_};
     T* const& arr {arr_};
@@ -28,85 +29,70 @@ class Arr {
 //~~~~Constructor and Destructors
   //~~~~1D functions
     Arr(){}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
-    Arr(const T2* a, const size_t& n):size_{n}, memAlloc{true}{memoryBlock_ = new T1[n]; for(int i=0; i<n; i++){memoryBlock_[i]=a[i];} arr_=memoryBlock_;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
-    Arr(const size_t& n, const T2& num):size_{n}, memAlloc{true}{memoryBlock_ = new T1[n]; for(int i=0; i<n; i++){memoryBlock_[i]=num;} arr_=memoryBlock_;}
-    Arr(const size_t& n):size_{n}, memAlloc{true}{memoryBlock_ = new T1[n];arr_=memoryBlock_;}
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
+    Arr(const T2* a, const size_t& n):size_{n}, memAlloc{true}{shap_ = new size_t[1]; shap_[0] = n; memoryBlock_ = new T1[n]; for(int i=0; i<n; i++){memoryBlock_[i]=a[i];} arr_=memoryBlock_;}
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
+    Arr(const size_t& n, const T2& num):size_{n}, memAlloc{true}{shap_ = new size_t[1]; shap_[0] = n; memoryBlock_ = new T1[n]; for(int i=0; i<n; i++){memoryBlock_[i]=num;} arr_=memoryBlock_;}
+    Arr(const size_t& n):size_{n}, memAlloc{true}{shap_ = new size_t[1]; shap_[0] = n; memoryBlock_ = new T1[n]; arr_=memoryBlock_;}
 
   //~~~~nD functions
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
     Arr(const T2* a, const size_t* sh):size_{1}, memAlloc{true}{
+        shap_ = new size_t[nDim];
+        for (int i=0; i<nDim; i++){
+            shap_[i] = sh[i]; size_*=shap_[i];
+        } 
+        memoryBlock_ = new T1[size_];
+        for(int i=0; i<size_; i++){
+            memoryBlock_[i]=a[i];
+        }
         if constexpr(nDim>1){
-            shap_ = new size_t[nDim];
-            for (int i=0; i<nDim; i++){
-                shap_[i] = sh[i]; size_*=shap_[i];
-            } 
-            memoryBlock_ = new T1[size_];
-            for(int i=0; i<size_; i++){
-                memoryBlock_[i]=a[i];
-            }
             arr_ = new T[shap_[0]];
             for (int i=0; i<shap_[0]; i++){
                 arr_[i] = T(&memoryBlock_[i*size_/sh[0]], &sh[1], nDim-1);
             }
         }else{
-            size_ = sh[0];
-            shap_ = &size_;
-            memoryBlock_ = new T1[size_];
-            for(int i=0; i<size_; i++){
-                memoryBlock_[i]=a[i];
-            }
             arr_=memoryBlock_;
         }
     }
 
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
     Arr(const T2& num, const size_t* sh):size_{1}, memAlloc{true}{
+        shap_ = new size_t[nDim]; 
+        for (int i=0; i<nDim; i++){
+            shap_[i] = sh[i]; size_*=shap_[i];
+        } 
+        memoryBlock_ = new T1[size_];
+        for(int i=0; i<size_; i++){
+            memoryBlock_[i]=num;
+        }
         if constexpr(nDim>1){
-            shap_ = new size_t[nDim]; 
-            for (int i=0; i<nDim; i++){
-                shap_[i] = sh[i]; size_*=shap_[i];
-            } 
-            memoryBlock_ = new T1[size_];
-            for(int i=0; i<size_; i++){
-                memoryBlock_[i]=num;
-            }
             arr_ = new T[shap_[0]];
             for (int i=0; i<shap_[0]; i++){
                 arr_[i] = T(&memoryBlock_[i*size_/sh[0]], &sh[1], nDim-1);
             }
         }else{
-            size_ = sh[0];
-            shap_ = &size_;
-            memoryBlock_ = new T1[size_];
-            for(int i=0; i<size_; i++){
-                memoryBlock_[i]=num;
-            }
             arr_=memoryBlock_;
         }
     }
 
     Arr(const size_t* sh):size_{1}, memAlloc{true}{
+        shap_ = new size_t[nDim]; 
+        for (int i=0; i<nDim; i++){
+            shap_[i] = sh[i]; size_*=shap_[i];
+        } 
+        memoryBlock_ = new T1[size_];
         if constexpr(nDim>1){
-            shap_ = new size_t[nDim]; 
-            for (int i=0; i<nDim; i++){
-                shap_[i] = sh[i]; size_*=shap_[i];
-            } 
-            memoryBlock_ = new T1[size_];
             arr_ = new T[shap_[0]];
             for (int i=0; i<shap_[0]; i++){
                 arr_[i] = T(&memoryBlock_[i*size_/sh[0]], &sh[1], nDim-1);
             }
         }else{
-            size_ = sh[0];
-            shap_ = &size_;
-            memoryBlock_ = new T1[size_];
             arr_=memoryBlock_;
         }
     }
 
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
     Arr(T2* a, const size_t* sh, const size_t dims):size_{1}{
       shap_ = new size_t[nDim]; 
       memoryBlock_ = a;
@@ -123,21 +109,20 @@ class Arr {
       }
     }
 
-  //~~~~Copy and move constructors
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+  //~~~~Copy with implicit casting constructors
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
     Arr(const Arr<T2, nDim>& a):size_{a.size}, memAlloc{true}{
         memoryBlock_ = new T1[size_]; 
         for(int i=0; i<size_; i++){
             memoryBlock_[i]=a.memoryBlock[i];
         }
+        shap_ = new size_t[nDim]; 
+        for (int i=0; i<nDim; i++){
+            shap_[i] = a.shap[i];
+        } 
         if constexpr(nDim==1){
             arr_=memoryBlock_;
-            shap_ = &size_;
         }else{
-            shap_ = new size_t[nDim]; 
-            for (int i=0; i<nDim; i++){
-                shap_[i] = a.shap[i];
-            } 
             arr_ = new T[shap_[0]];
             for (int i=0; i<shap_[0]; i++){
                 arr_[i] = T(&memoryBlock_[i*size_/shap_[0]], &shap_[1], nDim-1);
@@ -150,14 +135,13 @@ class Arr {
         for(int i=0; i<size_; i++){
             memoryBlock_[i]=a.memoryBlock_[i];
         }
+        shap_ = new size_t[nDim]; 
+        for (int i=0; i<nDim; i++){
+            shap_[i] = a.shap_[i];
+        } 
         if constexpr(nDim==1){
             arr_=memoryBlock_;
-            shap_ = &size_;
         }else{
-            shap_ = new size_t[nDim]; 
-            for (int i=0; i<nDim; i++){
-                shap_[i] = a.shap_[i];
-            } 
             arr_ = new T[shap_[0]];
             for (int i=0; i<shap_[0]; i++){
                 arr_[i] = T(&memoryBlock_[i*size_/shap_[0]], &shap_[1], nDim-1);
@@ -175,19 +159,14 @@ class Arr {
         swap(lhs.memAlloc, rhs.memAlloc);
         swap(lhs.arr_, rhs.arr_);
         swap(lhs.size_, rhs.size_);
-        if constexpr(nDim==1){      //EDIT: This should reevert back to the else case once shap_ is properally implemented.
-            lhs.shap_ = &lhs.size_;
-        }else{
-            swap(lhs.shap_, rhs.shap_);
-        }
+        swap(lhs.shap_, rhs.shap_);
     }
 
   //~~~~Destructor
     ~Arr(){
+        delete[] shap_;
         if constexpr(nDim>1)
             delete[] arr_;
-        if constexpr(nDim > 1)
-            delete[] shap_;
         if (memAlloc)
             delete [] memoryBlock_;
     }
@@ -204,8 +183,9 @@ class Arr {
     T& operator[](const int& ind){return arr_[ind];}
     const T& operator[](const int& ind) const{return arr_[ind];}
 
-    template<typename... Ints, typename = enable_if_t<conjunction<is_same<Ints, int>...>::value>>
+    template<typename... Ints, typename = enable_if_t<conjunction_v<is_same<Ints, int>...>>>
     T& operator()(Ints... inds){
+      static_assert(sizeof...(inds)==nDim, "Numbere of argumnerts must match number of dimeensions, otherwise use the [] operators conecutivley.");
       int ind[] = {forward<Ints>(inds)...};
       int multiplier=1, offset=0;
       for (int i=sizeof...(inds)-1; i>=0; i--){
@@ -216,14 +196,14 @@ class Arr {
     }
 
 //~~~~Overloading copy operators
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
     Arr<T1, nDim>& operator=(T2* arr2){
         for(int i=0; i<size_; i++){
             memoryBlock_[i]=arr2[i];
         } 
         return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
     Arr<T1, nDim>& operator=(const T2& num){
         for(int i=0; i<size_; i++){
             memoryBlock_[i]=num;
@@ -231,8 +211,7 @@ class Arr {
         return *this;
     }
     Arr<T1, nDim>& operator=(Arr<T1, nDim>&& arr2){
-        Arr<T1, nDim> temp{move(arr2)};
-        swap(*this, temp);
+        swap(*this, arr2);
         return *this;
     }
     Arr<T1, nDim>& operator=(const Arr<T1, nDim>& arr2){
@@ -240,32 +219,16 @@ class Arr {
         swap(*this, temp);
         return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
     Arr<T1, nDim>& operator=(const Arr<T2, nDim>& arr2){
-        size_ = arr2.size;
-        T2* memoryBlock2 = arr2.memoryBlock;
-        memoryBlock_ = new T1[size_]; 
-        for(int i=0; i<size_; i++){
-            memoryBlock_[i]=memoryBlock2[i];
-        }
-        if constexpr(nDim==1){
-            arr_=memoryBlock_;
-        }else{
-            shap_ = new size_t[nDim]; 
-            for (int i=0; i<nDim; i++){
-                shap_[i] = arr2.shap[i];
-            }
-            arr_ = new T[shap_[0]];
-            for (int i=0; i<shap_[0]; i++){
-                arr_[i] = T(&memoryBlock_[i*size_/shap_[0]], &shap_[1], nDim-1);
-            }
-        }
+        Arr<T1, nDim> temp{arr2};
+        swap(*this, temp);
         return *this;
     }
 
 //~~~~Overloading arithmatic operators
   //Addition
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& operator+=(const Arr<T2, nDim>& arr2){
         if (size_>=loopRollMin) {
             T2* ptr = arr2.memoryBlock;
@@ -281,7 +244,7 @@ class Arr {
       }
       return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim> operator+(const Arr<T2, nDim>& arr2) const{
       Arr<T1, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -298,7 +261,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& operator+=(const T2& num){
       if (size_>=loopRollMin) {
           for (int i=0; i+3<size_; i += 4) {
@@ -313,7 +276,7 @@ class Arr {
       }
       return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim> operator+(const T2& num) const{
       Arr<T1, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -329,7 +292,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     friend Arr<T1, nDim> operator+(const T2& num, const Arr<T1, nDim>& arr){
       Arr<T1, nDim> res(arr.size_);
       if (arr.size_>=4) {
@@ -347,7 +310,7 @@ class Arr {
     }
 
   //Subtraction
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& operator-=(const Arr<T2, nDim>& arr2){
       if (size_>=loopRollMin) {
         T2* ptr = arr2.memoryBlock;
@@ -363,7 +326,7 @@ class Arr {
       }
       return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim> operator-(const Arr<T2, nDim>& arr2) const{
       Arr<T1, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -380,7 +343,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& operator-=(const T2& num){
       if (size_>=loopRollMin) {
           for (int i=0; i+3<size_; i += 4) {
@@ -395,7 +358,7 @@ class Arr {
       }
       return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim> operator-(const T2& num) const{
       Arr<T1, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -411,7 +374,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     friend Arr<T1, nDim> operator-(const T2& num, const Arr<T1, nDim>& arr){
       Arr<T1, nDim> res(arr.size_);
       if (arr.size_>=4) {
@@ -429,7 +392,7 @@ class Arr {
     }
 
   //Multiply
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& operator*=(const Arr<T2, nDim>& arr2){
       if (size_>=loopRollMin) {
         T2* ptr = arr2.memoryBlock;
@@ -445,7 +408,7 @@ class Arr {
       }
       return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim> operator*(const Arr<T2, nDim>& arr2) const{
       Arr<T1, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -462,7 +425,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& operator*=(const T2& num){
       if (size_>=loopRollMin) {
           for (int i=0; i+3<size_; i += 4) {
@@ -477,7 +440,7 @@ class Arr {
       }
       return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim> operator*(const T2& num) const{
       Arr<T1, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -493,7 +456,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     friend Arr<T1, nDim> operator*(const T2& num, const Arr<T1, nDim>& arr){
       Arr<T1, nDim> res(arr.size_);
       if (arr.size_>=4) {
@@ -511,7 +474,7 @@ class Arr {
     }
 
   //Divide
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& operator/=(const Arr<T2, nDim>& arr2){
       if (size_>=loopRollMin) {
         T2* ptr = arr2.memoryBlock;
@@ -527,7 +490,7 @@ class Arr {
       }
       return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim> operator/(const Arr<T2, nDim>& arr2) const{
       Arr<T1, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -544,7 +507,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& operator/=(const T2& num){
       if (size_>=loopRollMin) {
           for (int i=0; i+3<size_; i += 4) {
@@ -559,7 +522,7 @@ class Arr {
       }
       return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim> operator/(const T2& num) const{
       Arr<T1, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -575,7 +538,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     friend Arr<T1, nDim> operator/(const T2& num, const Arr<T1, nDim>& arr){
       Arr<T1, nDim> res(arr.size_);
       if (arr.size_>=4) {
@@ -593,7 +556,7 @@ class Arr {
     }
 
   //Exp
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     friend Arr<T1, nDim> pow(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){
       Arr<T1, nDim> res(arr1.size_);
       if (arr1.size_>=4) {
@@ -610,7 +573,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     friend Arr<T1, nDim> pow(const Arr<T1, nDim>& arr1, const T2& num){
       Arr<T1, nDim> res(arr1.size_);
       if (arr1.size_>=4) {
@@ -627,7 +590,7 @@ class Arr {
       return res;
     }
   //Mod
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& operator%=(const Arr<T2, nDim>& arr2){
       if (size_>=loopRollMin) {
         T2* ptr = arr2.memoryBlock;
@@ -643,7 +606,7 @@ class Arr {
       }
       return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim> operator%(const Arr<T2, nDim>& arr2) const{
       Arr<T1, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -660,7 +623,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& operator%=(const T2& num){
       if (size_>=loopRollMin) {
           for (int i=0; i+3<size_; i += 4) {
@@ -675,7 +638,7 @@ class Arr {
       }
       return *this;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim> operator%(const T2& num) const{
       Arr<T1, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -691,7 +654,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     friend Arr<T1, nDim> operator%(const T2& num, const Arr<T1, nDim>& arr){
       Arr<T1, nDim> res(arr.size_);
       if (arr.size_>=4) {
@@ -710,7 +673,7 @@ class Arr {
 
 
 //~~~~Overloading comparrison operators for array return type
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator==(const Arr<T2, nDim>& arr2) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -742,7 +705,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator!=(const Arr<T2, nDim>& arr2) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -759,7 +722,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator>=(const Arr<T2, nDim>& arr2) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -776,7 +739,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator>(const Arr<T2, nDim>& arr2) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -793,7 +756,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator<=(const Arr<T2, nDim>& arr2) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -810,7 +773,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator<(const Arr<T2, nDim>& arr2) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -828,7 +791,7 @@ class Arr {
       return res;
     }
 
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator==(const T2& num) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -844,7 +807,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator!=(const T2& num) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -860,7 +823,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator>=(const T2& num) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -876,7 +839,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator>(const T2& num) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -892,7 +855,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator<=(const T2& num) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -908,7 +871,7 @@ class Arr {
       }
       return res;
     }
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> operator<(const T2& num) const{
       Arr<bool, nDim> res(shap_);
       if (size_>=loopRollMin) {
@@ -927,113 +890,113 @@ class Arr {
 
 
 //~~~~Safe functions for the overloaded operators
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Add(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)+=arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Sub(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)-=arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Mult(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)*=arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Div(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)/=arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Mod(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return (*this)%=arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Pow(const Arr<T2, nDim>& arr2){CheckCompatability((*this),arr2); return pow((*this),arr2);}
 
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> Equals(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)==arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> NotEquals(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)!=arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> Greater(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)>arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> GreaterEquals(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)>=arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> Less(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)<arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> LessEquals(const Arr<T2, nDim>& arr2) const{CheckCompatability((*this),arr2); return (*this)<=arr2;}
 
 //~~~~Safe Functions for number input
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Add(const T2& num){CheckCompatability((*this),num); return (*this)+=num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Sub(const T2& num){CheckCompatability((*this),num); return (*this)-=num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Mult(const T2& num){CheckCompatability((*this),num); return (*this)*=num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Div(const T2& num){CheckCompatability((*this),num); return (*this)/=num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Mod(const T2& num){CheckCompatability((*this),num); return (*this)%=num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<T1, nDim>& Pow(const T2& num){CheckCompatability((*this),num); return pow((*this),num);}
 
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> Equals(const T2& num) const{CheckCompatability((*this),num); return (*this)==num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> NotEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)!=num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> Greater(const T2& num) const{CheckCompatability((*this),num); return (*this)>num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> GreaterEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)>=num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> Less(const T2& num) const{CheckCompatability((*this),num); return (*this)<num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     Arr<bool, nDim> LessEquals(const T2& num) const{CheckCompatability((*this),num); return (*this)<=num;}
 
 
 
 //~~~~Safe Static functions for the overloaded operators
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Add(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1+arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Sub(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1-arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Mult(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1*arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Div(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1/arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Mod(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1%arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Pow(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return pow(arr1,arr2);}
 
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> Equals(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1==arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> NotEquals(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1!=arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> Greater(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1>arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> GreaterEquals(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1>=arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> Less(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1<arr2;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> LessEquals(const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){CheckCompatability(arr1,arr2); return arr1<=arr2;}
 
 //~~~~Static safe function for number input
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Add(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1+num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Sub(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1-num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Mult(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1*num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Div(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1/num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Mod(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1%num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<T1, nDim> Pow(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return pow(arr1,num);}
 
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> Equals(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1==num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> NotEquals(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1!=num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> Greater(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1>num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> GreaterEquals(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1>=num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> Less(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1<num;}
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_arithmetic_v<T2>>>
     static Arr<bool, nDim> LessEquals(const Arr<T1, nDim>& arr1, const T2& num){CheckCompatability(arr1,num); return arr1<=num;}
 
 
@@ -1199,7 +1162,7 @@ class Arr {
     }
 
 //~~~~Functions to check compatability
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
     static inline void CheckCompatability (const Arr<T1, nDim>& arr1, const Arr<T2, nDim>& arr2){
       if (arr1.size!=arr2.size)
         throw invalid_argument(string("Arrays must have the same length, arr1_size: ") + to_string(arr1.size) + string(", and arr2_size: ") + to_string(arr2.size));
@@ -1207,7 +1170,7 @@ class Arr {
         throw invalid_argument(string("Arrays must have the same typr, arr1_size: ") + string(typeid(T).name()) + string(", and arr2_size: ") + string(typeid(T2).name()));
     }
 
-    template <typename T2, typename = enable_if_t<is_arithmetic<T2>::value>>
+    template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
     static inline void CheckCompatability (const Arr<T1, nDim>& arr1, const T2& num){
       if (!is_convertible<T, T2>::value)
         throw invalid_argument(string("Arrays must have the same typr, arr1_size: ") + string(typeid(T).name()) + string(", and arr2_size: ") + string(typeid(T2).name()));
