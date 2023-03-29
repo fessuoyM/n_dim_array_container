@@ -2,6 +2,7 @@
 #include "Arr.h"
 
 using namespace std;
+using namespace chrono;
 
 template <typename T>
 void testing (Arr<T>& a){
@@ -34,7 +35,7 @@ T* add_r (T *a, T *b, int siz){
   for (int i=0; i<siz; i++){
     c[i]=a[i]+b[i];
   }
-  return c;
+  return move(&c[0]);
 }
 
 
@@ -52,10 +53,13 @@ int main(){
   cout << a << endl;
   int bb[5] = {5,6,5,6,5};
   Arr<int> b(5);
-  for(int i=0; i<b.siz(); i++){b[i]=bb[i];}
+  for(int i=0; i<b.size; i++){b[i]=bb[i];}
   Arr<int> c = b+5;
+  cout << c << endl;
   c=c+0;
+  cout << "test" << endl;
   c[2]=100;
+  cout << "test" << endl;
   cout << endl << t << endl << b << endl << c << endl;
   cout << pow(8,2) << endl;
   cout << c*b << endl << t+c*b << endl << t*c*b+2 << endl << t+c*b+2+pow(b,2) << endl << 10-(t+c*b+2+pow(b,2)) << endl;
@@ -80,7 +84,7 @@ int main(){
   cout << Arr<bool>::And(Arr<int>::Equals(b, 5), comp2) << endl;
 
   Arr<double> d(5);
-  double dd[5] = {4.5,3.4,2.3,1.2,0.1};
+  double dd[5] = {2.3,3.4,2.3,1.2,0.1};
   d=dd;
   cout << d << endl;
 
@@ -100,7 +104,7 @@ int main(){
 cout << endl << endl << endl;
 
   size_t N_array = 10000;
-  size_t N_repeat = 100000;
+  size_t N_repeat = 10000;
   int num1 = 5, num2 = 3;
   Arr<int> t1 (N_array, num1);
   Arr<int> t2 (N_array, num2);
@@ -108,69 +112,70 @@ cout << endl << endl << endl;
   for(int i=0; i<N_array; i++){t3[i]=num1;}
   int* t4 = new int[N_array];
   for(int i=0; i<N_array; i++){t4[i]=num2;}
+  
 
   Arr<int> r1(N_array);
   int r2[N_array];
   int* temp;
 
-  auto t_start = chrono::high_resolution_clock::now();
-  auto t_end = chrono::high_resolution_clock::now();
-  auto duration = duration_cast<chrono::microseconds>(t_end - t_start)/(double)N_repeat;
+  auto t_start = high_resolution_clock::now();
+  auto t_end = high_resolution_clock::now();
+  auto duration = duration_cast<microseconds>(t_end - t_start)/(double)N_repeat;
   auto tempDur = duration;
 
   cout << endl << "N_array: " << N_array << "    |    N_repeat: " << N_repeat << endl;
   cout << endl << "          Operations Type               | Arr object  |  built-in Arr  |  Diffrence  |             " << endl;
   cout << endl << "----------------------------------------|-------------|----------------|-------------|-------------" << endl;
 
-  t_start = chrono::high_resolution_clock::now();
+  t_start = high_resolution_clock::now();
   for (int i=0; i<N_repeat; i++){
     t1+=t2;
   }
-  t_end = chrono::high_resolution_clock::now();
-  duration = duration_cast<chrono::microseconds>(t_end - t_start)/(double)N_repeat;
+  t_end = high_resolution_clock::now();
+  duration = duration_cast<microseconds>(t_end - t_start)/(double)N_repeat;
   cout << "overloaded operation in_place:          |   " << duration.count();
   tempDur=duration;
 
-  t_start = chrono::high_resolution_clock::now();
+  t_start = high_resolution_clock::now();
   for (int i=0; i<N_repeat; i++){
     for (int j=0; j<N_array; j++){
       t3[j]+=t4[j];
     }
   }
-  t_end = chrono::high_resolution_clock::now();
-  duration = duration_cast<chrono::microseconds>(t_end - t_start)/(double)N_repeat;
+  t_end = high_resolution_clock::now();
+  duration = duration_cast<microseconds>(t_end - t_start)/(double)N_repeat;
   cout << "    |     " << duration.count() << "     |    " << (tempDur-duration).count() << "    |   microseconds." << endl;
 
 
-  t_start = chrono::high_resolution_clock::now();
+  t_start = high_resolution_clock::now();
   for (int i=0; i<N_repeat; i++){
     add(t1, t2);
   }
-  t_end = chrono::high_resolution_clock::now();
-  duration = duration_cast<chrono::microseconds>(t_end - t_start)/(double)N_repeat;
+  t_end = high_resolution_clock::now();
+  duration = duration_cast<microseconds>(t_end - t_start)/(double)N_repeat;
   cout << "Passed to function in_place:            |   " << duration.count();
   tempDur=duration;
 
-  t_start = chrono::high_resolution_clock::now();
+  t_start = high_resolution_clock::now();
   for (int i=0; i<N_repeat; i++){
     add(t3, t4, N_array);
   }
 
-  t_end = chrono::high_resolution_clock::now();
-  duration = duration_cast<chrono::microseconds>(t_end - t_start)/(double)N_repeat;
+  t_end = high_resolution_clock::now();
+  duration = duration_cast<microseconds>(t_end - t_start)/(double)N_repeat;
   cout << "    |     " << duration.count() << "     |    " << (tempDur-duration).count() << "    |   microseconds." << endl;
 
 
-  t_start = chrono::high_resolution_clock::now();
+  t_start = high_resolution_clock::now();
   for (int i=0; i<N_repeat; i++){
     r1 = add_r(t1, t2);
   }
-  t_end = chrono::high_resolution_clock::now();
-  duration = duration_cast<chrono::microseconds>(t_end - t_start)/(double)N_repeat;
+  t_end = high_resolution_clock::now();
+  duration = duration_cast<microseconds>(t_end - t_start)/(double)N_repeat;
   cout << "Passed to function return:              |   " << duration.count();
   tempDur=duration;
 
-  t_start = chrono::high_resolution_clock::now();
+  t_start = high_resolution_clock::now();
   for (int i=0; i<N_repeat; i++){
     temp = add_r(t3, t4, N_array);
 
@@ -178,7 +183,27 @@ cout << endl << endl << endl;
     //   r2[j]=temp[j];
     // }
   }
-  t_end = chrono::high_resolution_clock::now();
-  duration = duration_cast<chrono::microseconds>(t_end - t_start)/(double)N_repeat;
+  t_end = high_resolution_clock::now();
+  duration = duration_cast<microseconds>(t_end - t_start)/(double)N_repeat;
   cout << "    |     " << duration.count() << "     |    " << (tempDur-duration).count() << "    |   microseconds." << endl;
-}
+
+
+  cout << endl;
+  int dim_arr[3][5] = {{2,2,3,2,1},{6,5,4,6,4},{66,7,7,9,7}};
+  cout << endl;
+  size_t shap[2] = {3,5};
+  cout << endl;
+  Arr<int, 2> dimArr(dim_arr[0],shap);
+  cout << endl;
+  cout << dimArr << endl;
+  cout << dimArr[0]+5 << endl;
+  cout << (dimArr+5) << endl;
+  cout << (dimArr>4) << endl;
+  dimArr[1]/=2.5;
+  cout << dimArr << endl;
+
+  Arr<double> dimArrD = dimArr[1];
+  cout << dimArr << endl << dimArrD << endl;
+  dimArrD[2] = 0.021;
+  cout << dimArr << endl << dimArrD << endl;
+} 
