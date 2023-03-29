@@ -180,12 +180,14 @@ class Arr {
 
 
 //~~~~Overloading access operators
+    //Regular bracket indexing
     T& operator[](const int& ind){return arr_[ind];}
     const T& operator[](const int& ind) const{return arr_[ind];}
 
+    //Multi Dim indexing
     template<typename... Ints, typename = enable_if_t<conjunction_v<is_same<Ints, int>...>>>
-    T& operator()(Ints... inds){
-      static_assert(sizeof...(inds)==nDim, "Numbere of argumnerts must match number of dimeensions, otherwise use the [] operators conecutivley.");
+    T1& operator()(Ints... inds){
+      static_assert(sizeof...(inds)==nDim, "Number of argumnerts must match number of dimensions, otherwise use the [] operators consecutivley.");
       int ind[] = {forward<Ints>(inds)...};
       int multiplier=1, offset=0;
       for (int i=sizeof...(inds)-1; i>=0; i--){
@@ -194,6 +196,35 @@ class Arr {
       }
       return memoryBlock_[offset];
     }
+
+    //Logical indexing
+    Arr<T1, 1> operator()(Arr<bool, nDim> arr2){
+      int resSize = arr2.sum();
+      Arr<T1, 1> res(resSize);
+      int counter = 0;
+      for(int i=0; i<size_; i++){
+        if (arr2.memoryBlock[i]){
+            res[counter++]=memoryBlock_[i];
+        }
+      }
+      return res;
+    }
+
+    // //Array indexing
+    // template<typename... Inds, typename = enable_if_t<conjunction_v<is_same<Inds, pair<int, int>>...>>>
+    // Arr<T1, sizeof...(inds)>& operator()(Inds... inds){
+    //   static_assert(sizeof...(inds)==nDim, "Number of argumnerts must match number of dimensions, otherwise use the [] operators consecutivley.");
+    //   int ind[] = {forward<Inds>(inds)...};
+    //   size_t* new_shape = new size_t[sizeof...(inds)];
+    //   for (int i=sizeof...(inds)-1; i>=0; i--){
+    //     new_shape[i]=get<1>(ind[i])-get<0>(ind[i]);
+    //   }
+    //   Arr<T1, sizeof...(inds)> res{};
+    //   for (int i=sizeof...(inds)-1; i>=0; i--){
+    //     new_shape[i]=get<1>(ind[i])-get<0>(ind[i]);
+    //   }
+    //   return memoryBlock_[offset];
+    // }
 
 //~~~~Overloading copy operators
     template <typename T2, typename = enable_if_t<is_convertible_v<remove_pointer_t<T2>, remove_pointer_t<T1>>>>
@@ -225,6 +256,16 @@ class Arr {
         swap(*this, temp);
         return *this;
     }
+
+//~~~~Properties
+  //Sum of contents
+  conditional_t<is_same_v<T1, bool>, int, T1> sum(){
+    conditional_t<is_same_v<T1, bool>, int, T1> sum = 0;
+    for(int i=0; i<size_; i++){
+        sum+=memoryBlock_[i];
+    }
+    return sum;
+  }
 
 //~~~~Overloading arithmatic operators
   //Addition
