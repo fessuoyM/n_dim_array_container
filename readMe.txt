@@ -1,12 +1,11 @@
 Conatiner for arrays in C++. Designed to maintain speed and support multiple dimensions. It also will support some basic matrix math.
 
 ToDoList:
+This will use a nested approach which is more effiecent and will allow for multiDim views to bee more functional. Will need to keep track of the original aarray with the source for meemory control and to properly prevent memory leaks
 -Array indexing 
 --Will also ned to fix operations to stop using memoryBlock and use arr instead so that array views can be used in operations
 --Add logical indexing and array indexing to the []operator overloaded state if allowed
 --Looks like sequntial indexing is faster anyways rather than trying to make a function to take all dimensional indeecies at once and calculate the offset to use ont he memory block.
-
-
 
 Done:
 -memoryBlock should be initiallized for all the subarrays made in the nDim array
